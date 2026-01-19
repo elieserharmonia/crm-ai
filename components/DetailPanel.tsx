@@ -74,10 +74,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
       <div className="flex p-2 bg-slate-100/50 gap-2 mx-6 my-6 rounded-2xl border border-slate-200/50">
         <button onClick={() => setActiveTab('details')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'details' ? 'bg-white text-blue-600 shadow-xl' : 'text-slate-500'}`}>
-          <FileText size={16}/> DATA
+          <FileText size={16}/> RAW DATA
         </button>
         <button onClick={() => setActiveTab('ai')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-xl' : 'text-slate-500'}`}>
-          <Sparkles size={16}/> AI MANAGER
+          <Sparkles size={16}/> AI ANALYTICS
         </button>
       </div>
 
@@ -86,7 +86,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
           <div className="space-y-10">
             <section className="space-y-4">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={14}/> DESCRIPTION
+                <FileText size={14}/> DESCRIPTION (EXACT SOURCE)
               </h3>
               <textarea 
                 disabled={!canEdit}
@@ -97,20 +97,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             </section>
 
             <section className="space-y-6">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FINANCIALS & STATUS</h3>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FINANCIALS (AMOUNT)</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 rounded-3xl border border-slate-200 bg-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase">AMOUNT (R$)</p>
-                  <input 
-                    type="number"
-                    disabled={!canEdit}
-                    value={row.AMOUNT}
-                    onChange={e => handleChange('AMOUNT', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-transparent font-black text-xl outline-none text-slate-900 font-mono"
-                  />
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">AMOUNT (EXACT)</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 font-bold">R$</span>
+                    <input 
+                      type="number"
+                      disabled={!canEdit}
+                      value={row.AMOUNT}
+                      onChange={e => handleChange('AMOUNT', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-transparent font-black text-xl outline-none text-slate-900 font-mono"
+                    />
+                  </div>
                 </div>
                 <div className="p-6 rounded-3xl border border-slate-200 bg-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase">CONFIDENCE %</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">CONFIDENCE %</p>
                   <select 
                     disabled={!canEdit}
                     value={row.Confidence} 
@@ -127,23 +130,18 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                  <UserIcon size={14}/> CONTATOS
                </h3>
-               <select 
+               <textarea 
                  disabled={!canEdit}
+                 className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-bold text-sm h-24"
                  value={row.CONTATOS}
                  onChange={e => handleChange('CONTATOS', e.target.value)}
-                 className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-black text-sm"
-               >
-                 <option value="">Select Contact...</option>
-                 {companyContacts.map(c => (
-                   <option key={c.id} value={`${c.name} - ${c.phone}`}>{c.name}</option>
-                 ))}
-                 <option value={row.CONTATOS}>{row.CONTATOS}</option>
-               </select>
+                 placeholder="Original contact data..."
+               />
             </section>
 
             <section className="space-y-4">
                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                 <Clock size={14}/> FOLLOW-UP
+                 <Clock size={14}/> FOLLOW-UP (CHRONOLOGY)
                </h3>
                <textarea 
                   disabled={!canEdit}
