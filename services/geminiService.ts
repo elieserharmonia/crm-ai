@@ -3,23 +3,19 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ForecastRow, SalesPersonProfile, User } from "../types";
 
 export const geminiService = {
+  // Analisa o pipeline e usa Google Search para contexto externo
   async generateManagerAdvice(forecast: ForecastRow[], profile: SalesPersonProfile) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const context = `
-      Persona: Gerente de Vendas com mais de 20 anos de experiência. Especialista em fabricantes automotivos e linha amarela.
+      Persona: Gerente de Vendas com mais de 20 anos de experiência.
       Dados Atuais: ${forecast.length} oportunidades.
-      Principais Clientes: ${Array.from(new Set(forecast.map(r => r.CUSTOMER))).slice(0, 5).join(', ')}.
+      Empresas Principais: ${Array.from(new Set(forecast.map(r => r.CUSTOMER))).slice(0, 5).join(', ')}.
     `;
 
     const prompt = `
-      Use a pesquisa do Google para encontrar notícias recentes e tendências sobre as empresas listadas.
-      Com base nessas notícias e nos meus dados de forecast:
-      1. Crie um resumo de inteligência de mercado (o que está acontecendo no setor agora).
-      2. Priorize 3 abordagens de vendas usando os fatos novos encontrados.
-      3. Forneça rascunhos de mensagens que citem essas notícias recentes.
-      
-      Importante: Liste as URLs das notícias consultadas ao final.
+      Analise os dados e use a pesquisa do Google para encontrar notícias recentes sobre estas empresas.
+      Sugerir abordagens de vendas personalizadas.
     `;
 
     const response = await ai.models.generateContent({
@@ -30,84 +26,85 @@ export const geminiService = {
       }
     });
 
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    let text = response.text || "";
+    let text = response.text || '';
     
-    if (groundingChunks.length > 0) {
-      text += "\n\n### Fontes de Pesquisa:\n";
-      groundingChunks.forEach((chunk: any) => {
-        if (chunk.web) text += `- [${chunk.web.title}](${chunk.web.uri})\n`;
-      });
+    // Extrai URLs do Grounding de Pesquisa conforme as diretrizes
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (chunks) {
+      const links = chunks
+        .filter((c: any) => c.web?.uri)
+        .map((c: any) => `\n- [${c.web.title || 'Ver Fonte'}](${c.web.uri})`)
+        .join('');
+      if (links) {
+        text += `\n\n### Referências de Pesquisa:\n${links}`;
+      }
     }
 
     return text;
   },
 
-  async planVisitsWithMaps(forecast: ForecastRow[], latLng?: { latitude: number, longitude: number }) {
+  // Gera um relatório de visita técnico para uma oportunidade específica
+  async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const context = `
-      Lista de Clientes e UF: ${forecast.map(r => `${r.CUSTOMER} (${r.UF})`).join(', ')}.
-    `;
-
-    const prompt = `
-      Aja como um assistente de logística de vendas. 
-      Com base na localização do usuário e na lista de clientes, sugira um roteiro de visitas otimizado.
-      Use o Google Maps para localizar as sedes dessas empresas e fornecer os links de navegação.
-      Agrupe por proximidade regional.
-    `;
+    const prompt = `Crie um relatório de visita técnico para ${row.CUSTOMER}. Oportunidade: ${row.DESCRIPTION}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+
+    return response.text;
+  },
+
+  // Gera rascunho de e-mail de boas-vindas para novos consultores
+  async generateWelcomeEmail(user: User) {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `E-mail de boas-vindas para o novo consultor ${user.name}.`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  },
+
+  // Planeja visitas usando a ferramenta Google Maps Grounding
+  // Correção para o erro no MapTab.tsx: Adicionando o método planVisitsWithMaps
+  async planVisitsWithMaps(forecast: ForecastRow[], location?: { latitude: number; longitude: number }) {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const context = `Oportunidades em aberto: ${forecast.map(f => `${f.CUSTOMER} em ${f.UF}`).join(', ')}.`;
+    const prompt = `Como um especialista em logística, analise a localização dos clientes e planeje o melhor roteiro de visitas. Use o Google Maps para validar endereços e clusters geográficos.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite-latest', // Mapas são suportados na série 2.5
       contents: context + prompt,
       config: {
         tools: [{ googleMaps: {} }],
-        toolConfig: {
+        toolConfig: location ? {
           retrievalConfig: {
-            latLng: latLng || { latitude: -23.5505, longitude: -46.6333 }
+            latLng: {
+              latitude: location.latitude,
+              longitude: location.longitude
+            }
           }
-        }
-      },
+        } : undefined
+      }
     });
 
-    let text = response.text || "";
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    let text = response.text || '';
     
-    if (groundingChunks.length > 0) {
-      text += "\n\n### Localizações e Rotas Encontradas:\n";
-      groundingChunks.forEach((chunk: any) => {
-        if (chunk.maps) text += `- [Abrir no Maps: ${chunk.maps.title || 'Ver Local'}](${chunk.maps.uri})\n`;
-      });
+    // Extrai URLs do Grounding de Mapas conforme as diretrizes
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (chunks) {
+      const links = chunks
+        .filter((c: any) => c.maps?.uri)
+        .map((c: any) => `\n- [${c.maps.title || 'Localizar no Mapa'}](${c.maps.uri})`)
+        .join('');
+      if (links) {
+        text += `\n\n### Destinos Encontrados:\n${links}`;
+      }
     }
 
     return text;
-  },
-
-  async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `
-      Crie um RELATÓRIO DE VISITA profissional para o cliente ${row.CUSTOMER}.
-      Oportunidade: ${row.DESCRIPTION}. Fornecedor: ${row.SUPPLIER}.
-      Consultor: ${profile.name}.
-      Use fatos reais sobre a empresa se possível usando pesquisa.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] }
-    });
-
-    return response.text;
-  },
-
-  async generateWelcomeEmail(user: User) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `E-mail de boas-vindas para ${user.name} no CRM-IA.`;
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    return response.text;
   }
 };

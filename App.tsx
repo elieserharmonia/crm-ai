@@ -31,12 +31,12 @@ const App: React.FC = () => {
     setData(storageService.getForecast());
     setGoals(storageService.getGoals());
     setProfile(storageService.getProfile());
-    // Load contacts from separate storage or derive from data
-    const savedContacts = localStorage.getItem('crm_ia_contacts');
+    
+    const savedContacts = localStorage.getItem('crm_ia_contacts_db');
     if (savedContacts) setContacts(JSON.parse(savedContacts));
   }, []);
 
-  // Fechar painel ao trocar de aba
+  // Fechar perfil da negociação ao trocar de aba
   useEffect(() => {
     setSelectedRow(null);
   }, [activeTab]);
@@ -47,15 +47,7 @@ const App: React.FC = () => {
   }, [data]);
 
   useEffect(() => {
-    storageService.saveGoals(goals);
-  }, [goals]);
-
-  useEffect(() => {
-    storageService.saveProfile(profile);
-  }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem('crm_ia_contacts', JSON.stringify(contacts));
+    localStorage.setItem('crm_ia_contacts_db', JSON.stringify(contacts));
   }, [contacts]);
 
   const filteredData = useMemo(() => {
@@ -93,7 +85,6 @@ const App: React.FC = () => {
             setData={setData} 
             onRowSelect={setSelectedRow} 
             user={user} 
-            contacts={contacts}
           />
         )}
         {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} />}
@@ -103,7 +94,9 @@ const App: React.FC = () => {
             data={filteredData} 
             contacts={contacts} 
             setContacts={setContacts}
-            onFilterByCompany={(company) => setActiveTab(Tab.Forecast)} 
+            onFilterByCompany={(company) => {
+               setActiveTab(Tab.Forecast);
+            }} 
           />
         )}
         {activeTab === Tab.AiManager && <AiManagerTab data={filteredData} profile={profile} />}

@@ -33,7 +33,7 @@ export interface ForecastRow {
   'MAR': string;
   '2026': string;
   'FOLLOW-UP': string;
-  'CONTATOS': string; // String format for Excel compatibility
+  'CONTATOS': string;
   oweInfoToClient: boolean;
   lastUpdate?: string;
   notes?: string;
