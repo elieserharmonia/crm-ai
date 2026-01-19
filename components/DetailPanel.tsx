@@ -37,7 +37,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
   const rowResp = String(row['RESP.'] || '').toUpperCase().trim();
   const currentUserName = String(user.name || '').toUpperCase().trim();
   
-  // Lógica de Permissão Flexível: Se estiver vazio o resp, permite editar.
+  // Lógica de Permissão Flexível: Se estiver vazio o resp ou se o nome bater, permite editar.
   const canEdit = isManager || !row['RESP.'] || rowResp.includes(currentUserName) || currentUserName.includes(rowResp);
 
   const companyContacts = contacts.filter(c => c.companyName === row.CUSTOMER);
@@ -98,11 +98,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             
             <section className="space-y-4">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                <FileText size={14}/> Descrição do Projeto
+                <FileText size={14}/> DESCRIPTION (DESCRIÇÃO)
               </h3>
               <textarea 
                 disabled={!canEdit}
-                placeholder="Descreva o escopo, especificações técnicas e objetivos..."
+                placeholder="Escopo do projeto..."
                 className={`w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-32 outline-none font-bold text-sm leading-relaxed transition-all ${canEdit ? 'focus:bg-white focus:ring-2 focus:ring-blue-500' : 'cursor-not-allowed opacity-80'}`}
                 value={row.DESCRIPTION}
                 onChange={e => handleChange('DESCRIPTION', e.target.value)}
@@ -110,10 +110,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             </section>
 
             <section className="space-y-6">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Financeiro & Status</h3>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">VALOR & STATUS</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className={`p-6 rounded-3xl border transition-all flex flex-col gap-2 ${canEdit ? 'bg-slate-50 border-slate-200 hover:bg-white hover:shadow-lg' : 'bg-slate-50/50 border-slate-100 cursor-not-allowed opacity-70'}`}>
-                  <p className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1"><DollarSign size={10}/> Valor Projetado</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1"><DollarSign size={10}/> AMOUNT (VALOR)</p>
                   <input 
                     type="number"
                     disabled={!canEdit}
@@ -142,7 +142,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
             <section className="space-y-4">
                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                 <UserIcon size={14}/> Contato Principal
+                 <UserIcon size={14}/> CONTATOS
                </h3>
                <div className="relative group">
                  <select 
@@ -151,11 +151,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                    onChange={e => handleChange('CONTATOS', e.target.value)}
                    className={`w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-black text-sm appearance-none focus:ring-2 focus:ring-blue-500 transition-all ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                  >
-                   <option value="">Selecione um contato da empresa...</option>
+                   <option value="">Selecione um contato...</option>
                    {companyContacts.map(c => (
                      <option key={c.id} value={`${c.name} - ${c.phone}`}>{c.name} ({c.role})</option>
                    ))}
-                   <option value={row.CONTATOS}>{row.CONTATOS || 'Novo Contato do Excel'}</option>
+                   <option value={row.CONTATOS}>{row.CONTATOS || 'Novo Contato'}</option>
                  </select>
                  <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={20} />
                </div>
@@ -163,19 +163,19 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
             <section className="space-y-4">
                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                 <Clock size={14}/> Follow-up / Histórico de Negociação
+                 <Clock size={14}/> FOLLOW-UP (ACOMPANHAMENTO)
                </h3>
                <textarea 
                   disabled={!canEdit}
                   className={`w-full p-8 bg-slate-50 border border-slate-200 rounded-[2rem] h-56 outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm italic leading-relaxed shadow-inner transition-all ${canEdit ? 'hover:bg-white' : 'cursor-not-allowed opacity-70'}`}
                   value={row['FOLLOW-UP']}
                   onChange={e => handleChange('FOLLOW-UP', e.target.value)}
-                  placeholder="Registre cada interação com o cliente..."
+                  placeholder="Registre as interações..."
                />
             </section>
 
             <section className="space-y-6">
-               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Calendar size={14}/> Cronograma de Pipeline 2026</h3>
+               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Calendar size={14}/> Cronograma 2026</h3>
                <div className="grid grid-cols-4 gap-4">
                  {(['JAN', 'FEV', 'MAR', '2026'] as const).map(m => (
                    <button
@@ -205,7 +205,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
               <div className="flex flex-col items-center justify-center py-32 text-center">
                  <div className="w-28 h-28 bg-blue-50 text-blue-600 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl border border-blue-100 animate-bounce-slow"><Bot size={48}/></div>
                  <h4 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4">Gerente Estratégico IA</h4>
-                 <p className="text-sm text-slate-500 mb-12 max-w-sm leading-relaxed font-medium">Análise completa de probabilidade, sugestão de gatilhos de fechamento e rascunhos de abordagem para {row.CUSTOMER}.</p>
+                 <p className="text-sm text-slate-500 mb-12 max-w-sm leading-relaxed font-medium">Análise de probabilidade baseada nos dados do Excel para {row.CUSTOMER}.</p>
                  <button 
                   onClick={generateReport} 
                   disabled={isGenerating} 
