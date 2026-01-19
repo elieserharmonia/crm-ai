@@ -14,8 +14,9 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick 
   const [isAdding, setIsAdding] = useState(false);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({ customer: '', supplier: '', value: 0 });
 
-  const customers = useMemo(() => Array.from(new Set(data.map(r => r.CUSTOMER))).sort(), [data]);
-  const suppliers = useMemo(() => Array.from(new Set(data.map(r => r.SUPPLIER))).sort(), [data]);
+  // Fix: Changed r.CUSTOMER to r.CLIENTE and r.SUPPLIER to r.FORNECEDOR
+  const customers = useMemo(() => Array.from(new Set(data.map(r => r.CLIENTE))).sort(), [data]);
+  const suppliers = useMemo(() => Array.from(new Set(data.map(r => r.FORNECEDOR))).sort(), [data]);
 
   const addGoal = () => {
     if ((!newGoal.customer && !newGoal.supplier) || !newGoal.value) {
@@ -33,13 +34,16 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick 
 
   const getRealized = (goal: Goal) => {
     return data
-      .filter(r => r.Confidence === 100)
+      // Fix: Changed r.Confidence to r.CONFIDÊNCIA
+      .filter(r => r.CONFIDÊNCIA === 100)
       .filter(r => {
-        const matchCustomer = goal.customer ? r.CUSTOMER.toLowerCase() === goal.customer.toLowerCase() : true;
-        const matchSupplier = goal.supplier ? r.SUPPLIER.toLowerCase() === goal.supplier.toLowerCase() : true;
+        // Fix: Changed r.CUSTOMER to r.CLIENTE and r.SUPPLIER to r.FORNECEDOR
+        const matchCustomer = goal.customer ? r.CLIENTE.toLowerCase() === goal.customer.toLowerCase() : true;
+        const matchSupplier = goal.supplier ? r.FORNECEDOR.toLowerCase() === goal.supplier.toLowerCase() : true;
         return matchCustomer && matchSupplier;
       })
-      .reduce((acc, r) => acc + r.AMOUNT, 0);
+      // Fix: Changed r.AMOUNT to r.VALOR
+      .reduce((acc, r) => acc + r.VALOR, 0);
   };
 
   return (
@@ -90,7 +94,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick 
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 tracking-wider">Fornecedor</label>
               <input 
                 list="suppliers-list"
-                placeholder="Digite ou selecione o fornecedor..."
+                placeholder="Digite ou selecione the fornecedor..."
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                 value={newGoal.supplier}
                 onChange={e => setNewGoal({...newGoal, supplier: e.target.value})}

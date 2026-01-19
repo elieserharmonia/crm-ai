@@ -22,12 +22,12 @@ export interface ForecastRow {
   id: string;
   'Unnamed: 0': string | number;
   'RESP.': string;
-  'CUSTOMER': string;
-  'SUPPLIER': string;
-  'DESCRIPTION': string;
-  'AMOUNT': number;
+  'CLIENTE': string;
+  'FORNECEDOR': string;
+  'DESCRIÇÃO': string;
+  'VALOR': number;
   'UF': string;
-  'Confidence': number;
+  'CONFIDÊNCIA': number;
   'JAN': string;
   'FEV': string;
   'MAR': string;

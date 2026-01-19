@@ -28,10 +28,12 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
   const companyStats = useMemo(() => {
     const map = new Map<string, { count: number; total: number }>();
     data.forEach(r => {
-      if (!map.has(r.CUSTOMER)) map.set(r.CUSTOMER, { count: 0, total: 0 });
-      const entry = map.get(r.CUSTOMER)!;
+      // Fix: Changed r.CUSTOMER to r.CLIENTE
+      if (!map.has(r.CLIENTE)) map.set(r.CLIENTE, { count: 0, total: 0 });
+      const entry = map.get(r.CLIENTE)!;
       entry.count++;
-      entry.total += r.AMOUNT;
+      // Fix: Changed r.AMOUNT to r.VALOR
+      entry.total += r.VALOR;
     });
     return Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total);
   }, [data]);

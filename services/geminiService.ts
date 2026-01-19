@@ -10,7 +10,8 @@ export const geminiService = {
     const context = `
       Persona: Gerente de Vendas com mais de 20 anos de experiência.
       Dados Atuais: ${forecast.length} oportunidades.
-      Empresas Principais: ${Array.from(new Set(forecast.map(r => r.CUSTOMER))).slice(0, 5).join(', ')}.
+      // Fix: Changed r.CUSTOMER to r.CLIENTE
+      Empresas Principais: ${Array.from(new Set(forecast.map(r => r.CLIENTE))).slice(0, 5).join(', ')}.
     `;
 
     const prompt = `
@@ -46,7 +47,8 @@ export const geminiService = {
   // Gera um relatório de visita técnico para uma oportunidade específica
   async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Crie um relatório de visita técnico para ${row.CUSTOMER}. Oportunidade: ${row.DESCRIPTION}.`;
+    // Fix: Changed row.CUSTOMER to row.CLIENTE and row.DESCRIPTION to row['DESCRIÇÃO']
+    const prompt = `Crie um relatório de visita técnico para ${row.CLIENTE}. Oportunidade: ${row['DESCRIÇÃO']}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -72,7 +74,8 @@ export const geminiService = {
   async planVisitsWithMaps(forecast: ForecastRow[], location?: { latitude: number; longitude: number }) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    const context = `Oportunidades em aberto: ${forecast.map(f => `${f.CUSTOMER} em ${f.UF}`).join(', ')}.`;
+    // Fix: Changed f.CUSTOMER to f.CLIENTE
+    const context = `Oportunidades em aberto: ${forecast.map(f => `${f.CLIENTE} em ${f.UF}`).join(', ')}.`;
     const prompt = `Como um especialista em logística, analise a localização dos clientes e planeje o melhor roteiro de visitas. Use o Google Maps para validar endereços e clusters geográficos.`;
 
     const response = await ai.models.generateContent({
