@@ -38,7 +38,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
   const currentUserName = String(user.name || '').toUpperCase().trim();
   const canEdit = isManager || !row['RESP.'] || rowResp.includes(currentUserName) || currentUserName.includes(rowResp);
 
-  const companyContacts = contacts.filter(c => c.companyName === row.CLIENTE);
+  const companyContacts = contacts.filter(c => c.companyName === row.CUSTOMER);
 
   const handleChange = (field: keyof ForecastRow, value: any) => {
     if (!canEdit) return;
@@ -52,7 +52,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
       setAiReport(result);
       setActiveTab('ai');
     } catch (error) {
-      alert('IA indisponível no momento.');
+      alert('AI service currently unavailable.');
     } finally {
       setIsGenerating(false);
     }
@@ -63,9 +63,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
       <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-black rounded uppercase">OPORTUNIDADE</span>
+            <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-black rounded uppercase">OPPORTUNITY</span>
           </div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase truncate">{row.CLIENTE}</h2>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase truncate">{row.CUSTOMER}</h2>
         </div>
         <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 hover:text-red-500 transition-all shadow-sm">
           <X size={24} />
@@ -74,10 +74,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
       <div className="flex p-2 bg-slate-100/50 gap-2 mx-6 my-6 rounded-2xl border border-slate-200/50">
         <button onClick={() => setActiveTab('details')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'details' ? 'bg-white text-blue-600 shadow-xl' : 'text-slate-500'}`}>
-          <FileText size={16}/> Dados
+          <FileText size={16}/> DATA
         </button>
         <button onClick={() => setActiveTab('ai')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-xl' : 'text-slate-500'}`}>
-          <Sparkles size={16}/> Gerente IA
+          <Sparkles size={16}/> AI MANAGER
         </button>
       </div>
 
@@ -86,36 +86,35 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
           <div className="space-y-10">
             <section className="space-y-4">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={14}/> DESCRIÇÃO
+                <FileText size={14}/> DESCRIPTION
               </h3>
               <textarea 
                 disabled={!canEdit}
-                placeholder="Escopo do projeto..."
                 className={`w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-32 outline-none font-bold text-sm leading-relaxed transition-all ${canEdit ? 'focus:bg-white focus:ring-2 focus:ring-blue-500' : 'cursor-not-allowed opacity-80'}`}
-                value={row['DESCRIÇÃO']}
-                onChange={e => handleChange('DESCRIÇÃO', e.target.value)}
+                value={row.DESCRIPTION}
+                onChange={e => handleChange('DESCRIPTION', e.target.value)}
               />
             </section>
 
             <section className="space-y-6">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">VALOR & STATUS</h3>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FINANCIALS & STATUS</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 rounded-3xl border border-slate-200 bg-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase">VALOR (R$)</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">AMOUNT (R$)</p>
                   <input 
                     type="number"
                     disabled={!canEdit}
-                    value={row.VALOR}
-                    onChange={e => handleChange('VALOR', parseFloat(e.target.value) || 0)}
+                    value={row.AMOUNT}
+                    onChange={e => handleChange('AMOUNT', parseFloat(e.target.value) || 0)}
                     className="w-full bg-transparent font-black text-xl outline-none text-slate-900 font-mono"
                   />
                 </div>
                 <div className="p-6 rounded-3xl border border-slate-200 bg-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase">CONFIDÊNCIA %</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">CONFIDENCE %</p>
                   <select 
                     disabled={!canEdit}
-                    value={row.CONFIDÊNCIA} 
-                    onChange={e => handleChange('CONFIDÊNCIA', Number(e.target.value))}
+                    value={row.Confidence} 
+                    onChange={e => handleChange('Confidence', Number(e.target.value))}
                     className="w-full bg-transparent font-black text-xl outline-none appearance-none cursor-pointer text-slate-900"
                   >
                     {[0, 10, 30, 50, 80, 90, 100].map(v => <option key={v} value={v}>{v}%</option>)}
@@ -134,7 +133,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                  onChange={e => handleChange('CONTATOS', e.target.value)}
                  className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-black text-sm"
                >
-                 <option value="">Selecione...</option>
+                 <option value="">Select Contact...</option>
                  {companyContacts.map(c => (
                    <option key={c.id} value={`${c.name} - ${c.phone}`}>{c.name}</option>
                  ))}
@@ -151,7 +150,6 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                   className="w-full p-8 bg-slate-50 border border-slate-200 rounded-[2rem] h-56 outline-none font-medium text-sm italic leading-relaxed"
                   value={row['FOLLOW-UP']}
                   onChange={e => handleChange('FOLLOW-UP', e.target.value)}
-                  placeholder="Acompanhamento..."
                />
             </section>
           </div>
@@ -161,7 +159,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
           <div className="space-y-8 text-center py-20">
              {!aiReport ? (
                <button onClick={generateReport} disabled={isGenerating} className="px-14 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-xs shadow-xl flex items-center gap-4 mx-auto">
-                 {isGenerating ? <Loader2 className="animate-spin" size={20}/> : <Sparkles size={20}/>} Gerar Análise IA
+                 {isGenerating ? <Loader2 className="animate-spin" size={20}/> : <Sparkles size={20}/>} GENERATE AI ANALYSIS
                </button>
              ) : (
                <div className="p-10 bg-slate-50 border border-slate-200 rounded-[2.5rem] text-left whitespace-pre-wrap leading-relaxed text-sm font-medium text-slate-700">

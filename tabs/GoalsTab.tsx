@@ -14,9 +14,9 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick 
   const [isAdding, setIsAdding] = useState(false);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({ customer: '', supplier: '', value: 0 });
 
-  // Fix: Changed r.CUSTOMER to r.CLIENTE and r.SUPPLIER to r.FORNECEDOR
-  const customers = useMemo(() => Array.from(new Set(data.map(r => r.CLIENTE))).sort(), [data]);
-  const suppliers = useMemo(() => Array.from(new Set(data.map(r => r.FORNECEDOR))).sort(), [data]);
+  // Fix: Corrected property names from CLIENTE to CUSTOMER and FORNECEDOR to SUPPLIER
+  const customers = useMemo(() => Array.from(new Set(data.map(r => r.CUSTOMER))).sort(), [data]);
+  const suppliers = useMemo(() => Array.from(new Set(data.map(r => r.SUPPLIER))).sort(), [data]);
 
   const addGoal = () => {
     if ((!newGoal.customer && !newGoal.supplier) || !newGoal.value) {
@@ -34,16 +34,16 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick 
 
   const getRealized = (goal: Goal) => {
     return data
-      // Fix: Changed r.Confidence to r.CONFIDÊNCIA
-      .filter(r => r.CONFIDÊNCIA === 100)
+      // Fix: Corrected property name from CONFIDÊNCIA to Confidence
+      .filter(r => r.Confidence === 100)
       .filter(r => {
-        // Fix: Changed r.CUSTOMER to r.CLIENTE and r.SUPPLIER to r.FORNECEDOR
-        const matchCustomer = goal.customer ? r.CLIENTE.toLowerCase() === goal.customer.toLowerCase() : true;
-        const matchSupplier = goal.supplier ? r.FORNECEDOR.toLowerCase() === goal.supplier.toLowerCase() : true;
+        // Fix: Corrected property names from CLIENTE to CUSTOMER and FORNECEDOR to SUPPLIER
+        const matchCustomer = goal.customer ? r.CUSTOMER.toLowerCase() === goal.customer.toLowerCase() : true;
+        const matchSupplier = goal.supplier ? r.SUPPLIER.toLowerCase() === goal.supplier.toLowerCase() : true;
         return matchCustomer && matchSupplier;
       })
-      // Fix: Changed r.AMOUNT to r.VALOR
-      .reduce((acc, r) => acc + r.VALOR, 0);
+      // Fix: Corrected property name from VALOR to AMOUNT
+      .reduce((acc, r) => acc + r.AMOUNT, 0);
   };
 
   return (

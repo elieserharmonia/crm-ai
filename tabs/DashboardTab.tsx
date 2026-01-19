@@ -25,10 +25,11 @@ interface DashboardTabProps {
 const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
   // Stats
   const stats = useMemo(() => {
-    const totalValue = data.reduce((acc, r) => acc + (r.VALOR || 0), 0);
-    const wonValue = data.filter(r => r.CONFIDÊNCIA === 100).reduce((acc, r) => acc + (r.VALOR || 0), 0);
+    // Fix: Corrected property names from VALOR to AMOUNT and CONFIDÊNCIA to Confidence
+    const totalValue = data.reduce((acc, r) => acc + (r.AMOUNT || 0), 0);
+    const wonValue = data.filter(r => r.Confidence === 100).reduce((acc, r) => acc + (r.AMOUNT || 0), 0);
     const totalCount = data.length;
-    const wonCount = data.filter(r => r.CONFIDÊNCIA === 100).length;
+    const wonCount = data.filter(r => r.Confidence === 100).length;
     
     return {
       totalValue,
@@ -45,15 +46,16 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
     const months = ['JAN', 'FEV', 'MAR'];
     return months.map(m => ({
       name: m,
-      // Fix: Changed row to r inside reduce
-      total: data.reduce((acc, r) => acc + (r[m as keyof ForecastRow] === 'x' ? (r.VALOR || 0) : 0), 0)
+      // Fix: Corrected property name from VALOR to AMOUNT
+      total: data.reduce((acc, r) => acc + (r[m as keyof ForecastRow] === 'x' ? (r.AMOUNT || 0) : 0), 0)
     }));
   }, [data]);
 
   const amountByCustomer = useMemo(() => {
     const groups: Record<string, number> = {};
     data.forEach(r => {
-      groups[r.CLIENTE] = (groups[r.CLIENTE] || 0) + (r.VALOR || 0);
+      // Fix: Corrected property names from CLIENTE to CUSTOMER and VALOR to AMOUNT
+      groups[r.CUSTOMER] = (groups[r.CUSTOMER] || 0) + (r.AMOUNT || 0);
     });
     return Object.entries(groups)
       .map(([name, value]) => ({ name, value }))
@@ -65,7 +67,8 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
     const confs = [0, 10, 30, 50, 80, 90, 100];
     return confs.map(c => ({
       name: `${c}%`,
-      value: data.filter(r => r.CONFIDÊNCIA === c).length
+      // Fix: Corrected property name from CONFIDÊNCIA to Confidence
+      value: data.filter(r => r.Confidence === c).length
     }));
   }, [data]);
 
@@ -113,7 +116,8 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
               <thead className="sticky top-0 bg-slate-50"><tr className="text-left border-b border-slate-200"><th className="p-2 font-semibold">Fornecedor</th><th className="p-2 font-semibold text-right">Valor</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {Object.entries(data.reduce((acc, r) => {
-                  acc[r.FORNECEDOR] = (acc[r.FORNECEDOR] || 0) + (r.VALOR || 0);
+                  // Fix: Corrected property names from FORNECEDOR to SUPPLIER and VALOR to AMOUNT
+                  acc[r.SUPPLIER] = (acc[r.SUPPLIER] || 0) + (r.AMOUNT || 0);
                   return acc;
                 }, {} as any)).map(([name, val]: any) => (
                   <tr key={name}><td className="p-2 font-medium">{name}</td><td className="p-2 text-right font-mono">{val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>

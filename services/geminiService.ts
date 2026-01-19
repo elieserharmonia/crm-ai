@@ -3,20 +3,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ForecastRow, SalesPersonProfile, User } from "../types";
 
 export const geminiService = {
-  // Analisa o pipeline e usa Google Search para contexto externo
   async generateManagerAdvice(forecast: ForecastRow[], profile: SalesPersonProfile) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const context = `
-      Persona: Gerente de Vendas com mais de 20 anos de experiência.
-      Dados Atuais: ${forecast.length} oportunidades.
-      // Fix: Changed r.CUSTOMER to r.CLIENTE
-      Empresas Principais: ${Array.from(new Set(forecast.map(r => r.CLIENTE))).slice(0, 5).join(', ')}.
+      Persona: Strategic Sales Manager with 20+ years experience.
+      Current Data: ${forecast.length} opportunities.
+      Main Customers: ${Array.from(new Set(forecast.map(r => r.CUSTOMER))).slice(0, 5).join(', ')}.
     `;
 
     const prompt = `
-      Analise os dados e use a pesquisa do Google para encontrar notícias recentes sobre estas empresas.
-      Sugerir abordagens de vendas personalizadas.
+      Analyze the data and suggest personalized sales approaches for these customers.
     `;
 
     const response = await ai.models.generateContent({
@@ -29,26 +26,23 @@ export const geminiService = {
 
     let text = response.text || '';
     
-    // Extrai URLs do Grounding de Pesquisa conforme as diretrizes
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (chunks) {
       const links = chunks
         .filter((c: any) => c.web?.uri)
-        .map((c: any) => `\n- [${c.web.title || 'Ver Fonte'}](${c.web.uri})`)
+        .map((c: any) => `\n- [${c.web.title || 'View Source'}](${c.web.uri})`)
         .join('');
       if (links) {
-        text += `\n\n### Referências de Pesquisa:\n${links}`;
+        text += `\n\n### Research References:\n${links}`;
       }
     }
 
     return text;
   },
 
-  // Gera um relatório de visita técnico para uma oportunidade específica
   async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Fix: Changed row.CUSTOMER to row.CLIENTE and row.DESCRIPTION to row['DESCRIÇÃO']
-    const prompt = `Crie um relatório de visita técnico para ${row.CLIENTE}. Oportunidade: ${row['DESCRIÇÃO']}.`;
+    const prompt = `Generate a technical visit report for ${row.CUSTOMER}. Opportunity details: ${row.DESCRIPTION}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -58,10 +52,9 @@ export const geminiService = {
     return response.text;
   },
 
-  // Gera rascunho de e-mail de boas-vindas para novos consultores
   async generateWelcomeEmail(user: User) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `E-mail de boas-vindas para o novo consultor ${user.name}.`;
+    const prompt = `Draft a welcome email for the new consultant ${user.name}.`;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
@@ -69,17 +62,14 @@ export const geminiService = {
     return response.text;
   },
 
-  // Planeja visitas usando a ferramenta Google Maps Grounding
-  // Correção para o erro no MapTab.tsx: Adicionando o método planVisitsWithMaps
   async planVisitsWithMaps(forecast: ForecastRow[], location?: { latitude: number; longitude: number }) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Fix: Changed f.CUSTOMER to f.CLIENTE
-    const context = `Oportunidades em aberto: ${forecast.map(f => `${f.CLIENTE} em ${f.UF}`).join(', ')}.`;
-    const prompt = `Como um especialista em logística, analise a localização dos clientes e planeje o melhor roteiro de visitas. Use o Google Maps para validar endereços e clusters geográficos.`;
+    const context = `Active opportunities: ${forecast.map(f => `${f.CUSTOMER} in ${f.UF}`).join(', ')}.`;
+    const prompt = `Plan the best visit route for these customers based on their locations.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite-latest', // Mapas são suportados na série 2.5
+      model: 'gemini-2.5-flash-lite-latest',
       contents: context + prompt,
       config: {
         tools: [{ googleMaps: {} }],
@@ -96,15 +86,14 @@ export const geminiService = {
 
     let text = response.text || '';
     
-    // Extrai URLs do Grounding de Mapas conforme as diretrizes
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (chunks) {
       const links = chunks
         .filter((c: any) => c.maps?.uri)
-        .map((c: any) => `\n- [${c.maps.title || 'Localizar no Mapa'}](${c.maps.uri})`)
+        .map((c: any) => `\n- [${c.maps.title || 'Locate on Map'}](${c.maps.uri})`)
         .join('');
       if (links) {
-        text += `\n\n### Destinos Encontrados:\n${links}`;
+        text += `\n\n### Found Locations:\n${links}`;
       }
     }
 

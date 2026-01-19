@@ -8,26 +8,24 @@ export const notificationService = {
 
     data.forEach(row => {
       // Regra 1: Oportunidade de alto valor (> 500k) sem follow-up recente
-      // Fix: Changed row.AMOUNT to row.VALOR
-      if (row.VALOR > 500000 && (!row['FOLLOW-UP'] || row['FOLLOW-UP'].length < 10)) {
+      // Fix: Corrected property names from VALOR to AMOUNT and CLIENTE to CUSTOMER
+      if (row.AMOUNT > 500000 && (!row['FOLLOW-UP'] || row['FOLLOW-UP'].length < 10)) {
         alerts.push({
           id: `alert-value-${row.id}`,
           title: 'Alto Valor sem Follow-up',
-          // Fix: Changed row.CUSTOMER to row.CLIENTE and row.AMOUNT to row.VALOR
-          message: `A oportunidade ${row.CLIENTE} de R$ ${row.VALOR.toLocaleString()} precisa de atenção imediata.`,
+          message: `A oportunidade ${row.CUSTOMER} de R$ ${row.AMOUNT.toLocaleString()} precisa de atenção imediata.`,
           type: 'warning',
           rowId: row.id
         });
       }
 
       // Regra 2: Confiança Alta (90%) mas sem pedido (JAN/FEV/MAR não marcados)
-      // Fix: Changed row.Confidence to row.CONFIDÊNCIA
-      if (row.CONFIDÊNCIA === 90 && !row.JAN && !row.FEV && !row.MAR) {
+      // Fix: Corrected property names from CONFIDÊNCIA to Confidence and CLIENTE to CUSTOMER
+      if (row.Confidence === 90 && !row.JAN && !row.FEV && !row.MAR) {
         alerts.push({
           id: `alert-closing-${row.id}`,
           title: 'Gatilho de Fechamento',
-          // Fix: Changed row.CUSTOMER to row.CLIENTE
-          message: `${row.CLIENTE} está em 90%. Falta pouco para fechar! Verifique a PO.`,
+          message: `${row.CUSTOMER} está em 90%. Falta pouco para fechar! Verifique a PO.`,
           type: 'info',
           rowId: row.id
         });
@@ -38,8 +36,8 @@ export const notificationService = {
         alerts.push({
           id: `alert-pendency-${row.id}`,
           title: 'Pendência com Cliente',
-          // Fix: Changed row.CUSTOMER to row.CLIENTE
-          message: `Você deve informações para ${row.CLIENTE}.`,
+          // Fix: Corrected property name from CLIENTE to CUSTOMER
+          message: `Você deve informações para ${row.CUSTOMER}.`,
           type: 'warning',
           rowId: row.id
         });
