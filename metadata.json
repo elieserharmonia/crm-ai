@@ -1,0 +1,7 @@
+{
+  "name": "CRM-IA PRO",
+  "description": "CRM com IA Sales Manager, Google Search para inteligência de mercado e Google Maps para planejamento de visitas.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
