@@ -4,13 +4,6 @@ import { Bot, Sparkles, Copy, Loader2, Target, Calendar, MessageSquare, AlertTri
 import { ForecastRow, SalesPersonProfile } from '../types';
 import { geminiService } from '../services/geminiService';
 
-// Fix: Use the globally defined AIStudio type to match environment expectations and avoid modifier/type conflicts.
-declare global {
-  interface Window {
-    aistudio: AIStudio;
-  }
-}
-
 interface AiManagerTabProps {
   data: ForecastRow[];
   profile: SalesPersonProfile;
@@ -26,16 +19,19 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
     checkApiKey();
   }, []);
 
+  // Fixed: Replaced declare global block with direct type casting to avoid "identical modifiers" conflict
   const checkApiKey = async () => {
-    if (window.aistudio) {
-      const selected = await window.aistudio.hasSelectedApiKey();
+    const aistudio = (window as any).aistudio;
+    if (aistudio) {
+      const selected = await aistudio.hasSelectedApiKey();
       setHasApiKey(selected);
     }
   };
 
   const handleOpenKeySelector = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
+    const aistudio = (window as any).aistudio;
+    if (aistudio) {
+      await aistudio.openSelectKey();
       setHasApiKey(true);
       setError(null);
     }
@@ -48,7 +44,8 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
     }
     
     // Validar chave antes de prosseguir
-    const keyReady = await window.aistudio.hasSelectedApiKey();
+    const aistudio = (window as any).aistudio;
+    const keyReady = aistudio ? await aistudio.hasSelectedApiKey() : false;
     if (!keyReady) {
       setHasApiKey(false);
       return;
@@ -59,6 +56,7 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
     setAdvice(null);
     
     try {
+      // Correctly call the now implemented generateManagerAdvice method
       const result = await geminiService.generateManagerAdvice(data, profile);
       setAdvice(result);
     } catch (err: any) {

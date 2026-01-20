@@ -68,7 +68,6 @@ export enum Tab {
   Dashboard = 'painel',
   Goals = 'metas',
   Companies = 'empresas',
-  AiManager = 'gerente-ia',
   Settings = 'configuracoes'
 }
 

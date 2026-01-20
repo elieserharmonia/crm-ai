@@ -5,7 +5,6 @@ import ForecastTab from './tabs/ForecastTab';
 import DashboardTab from './tabs/DashboardTab';
 import GoalsTab from './tabs/GoalsTab';
 import CompaniesTab from './tabs/CompaniesTab';
-import AiManagerTab from './tabs/AiManagerTab';
 import SettingsTab from './tabs/SettingsTab';
 import DetailPanel from './components/DetailPanel';
 import LoginPage from './components/LoginPage';
@@ -111,7 +110,6 @@ const App: React.FC = () => {
             }} 
           />
         )}
-        {activeTab === Tab.AiManager && <AiManagerTab data={filteredData} profile={profile} />}
         {activeTab === Tab.Settings && <SettingsTab profile={profile} setProfile={setProfile} user={user} />}
 
         {selectedRow && (

@@ -5,7 +5,6 @@ import {
   TableProperties, 
   Target, 
   Building2, 
-  Bot, 
   Settings, 
   Menu, 
   X,
@@ -37,7 +36,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: Tab.Dashboard, label: 'Dashboard', icon: LayoutDashboard },
     { id: Tab.Goals, label: 'Metas', icon: Target },
     { id: Tab.Companies, label: 'Empresas', icon: Building2 },
-    { id: Tab.AiManager, label: 'Gerente IA', icon: Bot },
     { id: Tab.Settings, label: 'Configurações', icon: Settings },
   ];
 

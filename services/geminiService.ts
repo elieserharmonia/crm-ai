@@ -16,63 +16,6 @@ const getAI = () => {
 };
 
 export const geminiService = {
-  // Generates strategic advice for sales managers based on current forecast data
-  async generateManagerAdvice(forecast: ForecastRow[], profile: SalesPersonProfile) {
-    const ai = getAI();
-    
-    // Summary of data for context
-    const topOpportunities = [...forecast]
-      .sort((a, b) => b.AMOUNT - a.AMOUNT)
-      .slice(0, 15)
-      .map(r => `- ${r.CUSTOMER}: R$ ${r.AMOUNT} (${r.Confidence}% conf.)`)
-      .join('\n');
-
-    const context = `
-      Persona: Você é o Gerente Estratégico de Vendas (AI Sales Manager).
-      Especialista sendo aconselhado: ${profile.name || 'Consultor'}.
-      Setor de Atuação: Indústria Automotiva e Linha Amarela.
-      Dados do Pipeline Atual (Principais Oportunidades):
-      ${topOpportunities}
-      Total de Oportunidades: ${forecast.length}.
-    `;
-
-    const prompt = `
-      Como Gerente IA, forneça um plano de ação estratégico. 
-      Analise o volume financeiro vs confiança. 
-      Sugira 3 ações imediatas para fechar os negócios acima de 80% e como recuperar os negócios 'sonho' (abaixo de 30%).
-      Seja direto, profissional e motivador.
-    `;
-
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // High-quality reasoning model
-        contents: [{ parts: [{ text: context + prompt }] }],
-      });
-
-      return response.text || "A IA não retornou um conteúdo válido.";
-    } catch (e: any) {
-      console.error("Gemini Advice Error:", e);
-      throw e;
-    }
-  },
-
-  // Generates a technical visit report for a specific customer/opportunity
-  async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
-    const ai = getAI();
-    const prompt = `Gere um relatório de visita técnica para o cliente ${row.CUSTOMER}. Oportunidade: ${row.DESCRIPTION}. Consultor: ${profile.name}.`;
-    
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: prompt }] }],
-      });
-      return response.text;
-    } catch (e: any) {
-      console.error("Gemini Report Error:", e);
-      throw e;
-    }
-  },
-
   // Generates a welcome email for newly registered users
   async generateWelcomeEmail(user: User) {
     try {
@@ -84,6 +27,52 @@ export const geminiService = {
       return response.text;
     } catch (e) {
       return `Bem-vindo ao CRM-IA!`;
+    }
+  },
+
+  // Generates strategic analysis for the sales manager based on forecast data
+  async generateManagerAdvice(data: ForecastRow[], profile: SalesPersonProfile): Promise<string> {
+    const ai = getAI();
+    // Prepare data summary to focus on key info
+    const dataSummary = data.map(r => ({
+      cliente: r.CUSTOMER,
+      fornecedor: r.SUPPLIER,
+      descricao: r.DESCRIPTION,
+      valor: r.AMOUNT,
+      confianca: r.Confidence,
+      followUp: r['FOLLOW-UP']
+    }));
+
+    const prompt = `Você é um Gerente Estratégico de Vendas de alto nível.
+Analise o pipeline de vendas de ${profile.name} para 2026.
+
+Dados do Forecast:
+${JSON.stringify(dataSummary).substring(0, 20000)}
+
+Forneça um plano de ação estratégico detalhado em Português (Brasil) contendo:
+1. **Visão Executiva**: Análise resumida da saúde geral do pipeline.
+2. **Top 3 Oportunidades**: Quais negócios devem ser prioridade máxima agora (baseado em valor e confiança).
+3. **Estratégias de Follow-up**: Como destravar negociações com confiança média (30-50%).
+4. **Foco em Resultados**: Orientações para garantir que as metas de 2026 sejam batidas.
+
+Responda em Markdown, com tom profissional, direto e encorajador.`;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview', // High-quality reasoning for complex tasks
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          temperature: 0.7,
+          topP: 0.9,
+        }
+      });
+      return response.text || "Desculpe, não consegui processar a análise estratégica agora.";
+    } catch (e: any) {
+      console.error("Gemini Manager Advice Error:", e);
+      if (e.message?.includes('Requested entity was not found')) {
+        throw new Error("Sua sessão de API expirou ou é inválida. Por favor, selecione a chave novamente.");
+      }
+      throw new Error("Erro ao gerar análise estratégica. Verifique sua conexão.");
     }
   },
 
