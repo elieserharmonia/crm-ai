@@ -2,14 +2,12 @@
 import { ForecastRow, Notification } from '../types';
 
 export const notificationService = {
-  getAlerts: (data: ForecastRow[]): Notification[] => {
+  getAlerts: async (data: ForecastRow[]): Promise<Notification[]> => {
     const alerts: Notification[] = [];
-    const now = new Date();
-
+    
     data.forEach(row => {
       // Regra 1: Oportunidade de alto valor (> 500k) sem follow-up recente
-      // Fix: Corrected property names from VALOR to AMOUNT and CLIENTE to CUSTOMER
-      if (row.AMOUNT > 500000 && (!row['FOLLOW-UP'] || row['FOLLOW-UP'].length < 10)) {
+      if ((row.AMOUNT || 0) > 500000 && (!row['FOLLOW-UP'] || row['FOLLOW-UP'].length < 10)) {
         alerts.push({
           id: `alert-value-${row.id}`,
           title: 'Alto Valor sem Follow-up',
@@ -19,8 +17,7 @@ export const notificationService = {
         });
       }
 
-      // Regra 2: Confiança Alta (90%) mas sem pedido (JAN/FEV/MAR não marcados)
-      // Fix: Corrected property names from CONFIDÊNCIA to Confidence and CLIENTE to CUSTOMER
+      // Regra 2: Confiança Alta (90%) mas sem indicação de fechamento iminente
       if (row.Confidence === 90 && !row.JAN && !row.FEV && !row.MAR) {
         alerts.push({
           id: `alert-closing-${row.id}`,
@@ -36,7 +33,6 @@ export const notificationService = {
         alerts.push({
           id: `alert-pendency-${row.id}`,
           title: 'Pendência com Cliente',
-          // Fix: Corrected property name from CLIENTE to CUSTOMER
           message: `Você deve informações para ${row.CUSTOMER}.`,
           type: 'warning',
           rowId: row.id

@@ -26,24 +26,27 @@ const App: React.FC = () => {
   const [companiesResetTrigger, setCompaniesResetTrigger] = useState(0);
 
   useEffect(() => {
-    const session = authService.getCurrentUser();
-    if (session) setUser(session);
-    
-    setData(storageService.getForecast());
-    setGoals(storageService.getGoals());
-    setProfile(storageService.getProfile());
-    
-    const savedContacts = localStorage.getItem('crm_ia_contacts_db');
-    if (savedContacts) setContacts(JSON.parse(savedContacts));
+    try {
+      const session = authService.getCurrentUser();
+      if (session) setUser(session);
+      
+      setData(storageService.getForecast());
+      setGoals(storageService.getGoals());
+      setProfile(storageService.getProfile());
+      
+      const savedContacts = localStorage.getItem('crm_ia_contacts_db');
+      if (savedContacts) setContacts(JSON.parse(savedContacts));
+    } catch (e) {
+      console.error("Initialization Error:", e);
+    }
   }, []);
 
-  // Reset states on tab change
   useEffect(() => {
     setSelectedRow(null);
   }, [activeTab]);
 
   useEffect(() => {
-    setNotifications(notificationService.getAlerts(data));
+    notificationService.getAlerts(data).then(setNotifications);
     storageService.saveForecast(data);
   }, [data]);
 
@@ -71,7 +74,6 @@ const App: React.FC = () => {
 
   const handleTabChange = (tab: Tab) => {
     if (tab === Tab.Companies) {
-      // Trigger reset inside CompaniesTab if already on that tab or switching to it
       setCompaniesResetTrigger(prev => prev + 1);
     }
     setActiveTab(tab);
