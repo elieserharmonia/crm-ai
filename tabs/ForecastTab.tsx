@@ -250,7 +250,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
           </div>
         </div>
         <label className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 cursor-pointer font-black shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
-          <Upload size={20} /> IMPORT ORIGINAL EXCEL (01.2026)
+          <Upload size={20} /> IMPORTAR DADOS
           <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} />
         </label>
       </div>

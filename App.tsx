@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [selectedRow, setSelectedRow] = useState<ForecastRow | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [companiesResetTrigger, setCompaniesResetTrigger] = useState(0);
 
   useEffect(() => {
     const session = authService.getCurrentUser();
@@ -36,7 +37,7 @@ const App: React.FC = () => {
     if (savedContacts) setContacts(JSON.parse(savedContacts));
   }, []);
 
-  // Fechar perfil da negociação ao trocar de aba
+  // Reset states on tab change
   useEffect(() => {
     setSelectedRow(null);
   }, [activeTab]);
@@ -68,12 +69,20 @@ const App: React.FC = () => {
   const handleLogin = (newUser: User) => setUser(newUser);
   const handleLogout = () => { authService.logout(); setUser(null); };
 
+  const handleTabChange = (tab: Tab) => {
+    if (tab === Tab.Companies) {
+      // Trigger reset inside CompaniesTab if already on that tab or switching to it
+      setCompaniesResetTrigger(prev => prev + 1);
+    }
+    setActiveTab(tab);
+  };
+
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
   return (
     <Layout 
       activeTab={activeTab} 
-      setActiveTab={setActiveTab} 
+      setActiveTab={handleTabChange} 
       user={user} 
       onLogout={handleLogout}
       notifications={notifications}
@@ -94,6 +103,7 @@ const App: React.FC = () => {
             data={filteredData} 
             contacts={contacts} 
             setContacts={setContacts}
+            resetTrigger={companiesResetTrigger}
             onFilterByCompany={(company) => {
                setActiveTab(Tab.Forecast);
             }} 
