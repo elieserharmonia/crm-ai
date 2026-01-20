@@ -5,9 +5,14 @@ import { ForecastRow, SalesPersonProfile, User } from "../types";
 /**
  * Initializes the GoogleGenAI client using the provided environment variable.
  * The API key is managed externally and provided via process.env.API_KEY.
+ * We create a fresh instance per call to ensure we use the updated key from the selector dialog.
  */
 const getAI = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Chave de API não configurada. Por favor, utilize o botão de configuração no painel.");
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
 export const geminiService = {
@@ -74,7 +79,7 @@ export const geminiService = {
       const ai = getAI();
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Escreva um e-mail de boas-vindas para ${user.name}.`,
+        contents: [{ parts: [{ text: `Escreva um e-mail de boas-vindas para ${user.name}.` }] }],
       });
       return response.text;
     } catch (e) {
@@ -82,7 +87,7 @@ export const geminiService = {
     }
   },
 
-  // FIX: Implemented missing planVisitsWithMaps method required by MapTab.tsx
+  // Implemented planVisitsWithMaps method required by MapTab.tsx
   // Uses Google Maps grounding which is exclusive to Gemini 2.5 series models.
   async planVisitsWithMaps(forecast: ForecastRow[], location?: { latitude: number; longitude: number }) {
     const ai = getAI();

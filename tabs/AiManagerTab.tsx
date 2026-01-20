@@ -1,8 +1,15 @@
 
-import React, { useState } from 'react';
-import { Bot, Sparkles, Copy, Loader2, Target, Calendar, MessageSquare, AlertTriangle, FileSearch, ArrowRight, CheckCircle2, RefreshCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bot, Sparkles, Copy, Loader2, Target, Calendar, MessageSquare, AlertTriangle, FileSearch, ArrowRight, CheckCircle2, RefreshCcw, Key, ExternalLink } from 'lucide-react';
 import { ForecastRow, SalesPersonProfile } from '../types';
 import { geminiService } from '../services/geminiService';
+
+// Fix: Use the globally defined AIStudio type to match environment expectations and avoid modifier/type conflicts.
+declare global {
+  interface Window {
+    aistudio: AIStudio;
+  }
+}
 
 interface AiManagerTabProps {
   data: ForecastRow[];
@@ -13,6 +20,26 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
   const [advice, setAdvice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(true);
+
+  useEffect(() => {
+    checkApiKey();
+  }, []);
+
+  const checkApiKey = async () => {
+    if (window.aistudio) {
+      const selected = await window.aistudio.hasSelectedApiKey();
+      setHasApiKey(selected);
+    }
+  };
+
+  const handleOpenKeySelector = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setHasApiKey(true);
+      setError(null);
+    }
+  };
 
   const generateAdvice = async () => {
     if (data.length === 0) {
@@ -20,6 +47,13 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
       return;
     }
     
+    // Validar chave antes de prosseguir
+    const keyReady = await window.aistudio.hasSelectedApiKey();
+    if (!keyReady) {
+      setHasApiKey(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setAdvice(null);
@@ -29,7 +63,16 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
       setAdvice(result);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Erro inesperado na comunicação com a IA.');
+      const msg = err.message || '';
+      if (msg.includes('API Key') || msg.includes('not set')) {
+        setHasApiKey(false);
+        setError('Uma Chave de API é necessária para acessar o Gerente Pro.');
+      } else if (msg.includes('entity was not found')) {
+        setHasApiKey(false);
+        setError('Sua sessão de API expirou ou é inválida. Por favor, reconfigure a chave.');
+      } else {
+        setError(msg || 'Erro inesperado na comunicação com a IA.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -63,14 +106,33 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
               Mapeei <span className="font-black text-white px-2 py-0.5 bg-blue-500/30 rounded-lg">{data.length} oportunidades</span> cruciais.
             </p>
             <div className="flex flex-wrap gap-4 pt-2 justify-center md:justify-start">
-              <button 
-                onClick={generateAdvice}
-                disabled={isLoading}
-                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black shadow-xl hover:-translate-y-1 transition-all active:scale-95 group ${isLoading ? 'bg-blue-400 text-white/50' : 'bg-white text-blue-700 hover:shadow-white/40'}`}
-              >
-                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} className="group-hover:rotate-12 transition-transform" />}
-                {isLoading ? 'ANALISANDO...' : 'GERAR PLANO DE AÇÃO'}
-              </button>
+              {!hasApiKey ? (
+                <div className="flex flex-col gap-3 items-center md:items-start">
+                  <button 
+                    onClick={handleOpenKeySelector}
+                    className="flex items-center gap-3 px-8 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-xl hover:-translate-y-1 transition-all active:scale-95"
+                  >
+                    <Key size={20} /> CONFIGURAR CHAVE API
+                  </button>
+                  <a 
+                    href="https://ai.google.dev/gemini-api/docs/billing" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[10px] font-black uppercase text-blue-200 hover:text-white underline transition-colors"
+                  >
+                    Documentação de Faturamento <ExternalLink size={10} />
+                  </a>
+                </div>
+              ) : (
+                <button 
+                  onClick={generateAdvice}
+                  disabled={isLoading}
+                  className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black shadow-xl hover:-translate-y-1 transition-all active:scale-95 group ${isLoading ? 'bg-blue-400 text-white/50' : 'bg-white text-blue-700 hover:shadow-white/40'}`}
+                >
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} className="group-hover:rotate-12 transition-transform" />}
+                  {isLoading ? 'ANALISANDO...' : 'GERAR PLANO DE AÇÃO'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -86,12 +148,21 @@ const AiManagerTab: React.FC<AiManagerTabProps> = ({ data, profile }) => {
              <h3 className="text-xl font-bold text-red-800">Ops! Algo deu errado.</h3>
              <p className="text-red-600/70 text-sm max-w-md mx-auto">{error}</p>
            </div>
-           <button 
-            onClick={generateAdvice}
-            className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 mx-auto hover:bg-red-700 transition-colors"
-           >
-             <RefreshCcw size={16} /> Tentar Novamente
-           </button>
+           {!hasApiKey ? (
+             <button 
+              onClick={handleOpenKeySelector}
+              className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm flex items-center gap-2 mx-auto hover:bg-slate-800 transition-colors"
+             >
+               <Key size={16} /> Selecionar Nova Chave
+             </button>
+           ) : (
+             <button 
+              onClick={generateAdvice}
+              className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 mx-auto hover:bg-red-700 transition-colors"
+             >
+               <RefreshCcw size={16} /> Tentar Novamente
+             </button>
+           )}
         </div>
       )}
 
