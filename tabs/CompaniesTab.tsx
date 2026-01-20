@@ -11,7 +11,11 @@ import {
   MapPin,
   ShieldCheck,
   UserCheck,
-  Building
+  Building,
+  MessageSquare,
+  Phone,
+  Mail,
+  ExternalLink
 } from 'lucide-react';
 import { ForecastRow, Contact } from '../types';
 
@@ -28,7 +32,7 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [newContact, setNewContact] = useState<Partial<Contact>>({ name: '', role: '', phone: '', email: '' });
 
-  // Reset view when resetTrigger changes (sidebar click logic from App.tsx)
+  // Reset view when resetTrigger changes
   useEffect(() => {
     setSelectedCompany(null);
   }, [resetTrigger]);
@@ -59,6 +63,13 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
     setContacts([...contacts, contact]);
     setIsAddingContact(false);
     setNewContact({ name: '', role: '', phone: '', email: '' });
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone) return;
+    const url = `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone}`;
+    window.open(url, '_blank');
   };
 
   if (selectedCompany) {
@@ -95,40 +106,95 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             </div>
 
-            {/* Contacts Card */}
-            <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-xl space-y-6">
-              <div className="flex justify-between items-center">
+            {/* Contacts Card - Updated to match provided style */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-xl space-y-6">
+              <div className="flex justify-between items-center px-2">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <User size={16} /> Decisores e Contatos
                 </h3>
-                <button onClick={() => setIsAddingContact(true)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all">
-                  <Plus size={16}/>
+                <button 
+                  onClick={() => setIsAddingContact(true)} 
+                  className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all shadow-sm"
+                >
+                  <Plus size={18}/>
                 </button>
               </div>
 
               {isAddingContact && (
-                <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 space-y-3">
-                  <input placeholder="Nome" className="w-full p-2.5 text-xs rounded-xl border outline-none" onChange={e => setNewContact({...newContact, name: e.target.value})} />
-                  <input placeholder="Cargo" className="w-full p-2.5 text-xs rounded-xl border outline-none" onChange={e => setNewContact({...newContact, role: e.target.value})} />
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setIsAddingContact(false)} className="text-[10px] font-black text-slate-400 uppercase">Cancelar</button>
-                    <button onClick={addContact} className="px-4 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase">Salvar</button>
+                <div className="p-6 bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-200 space-y-4 animate-in zoom-in-95 duration-300">
+                  <div className="space-y-3">
+                    <input 
+                      placeholder="Nome do Contato" 
+                      className="w-full px-5 py-3 text-sm rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" 
+                      onChange={e => setNewContact({...newContact, name: e.target.value})} 
+                    />
+                    <input 
+                      placeholder="Cargo / Função" 
+                      className="w-full px-5 py-3 text-sm rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" 
+                      onChange={e => setNewContact({...newContact, role: e.target.value})} 
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                       <input 
+                        placeholder="WhatsApp/Tel" 
+                        className="w-full px-5 py-3 text-sm rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" 
+                        onChange={e => setNewContact({...newContact, phone: e.target.value})} 
+                      />
+                      <input 
+                        placeholder="E-mail" 
+                        className="w-full px-5 py-3 text-sm rounded-2xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" 
+                        onChange={e => setNewContact({...newContact, email: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end items-center gap-4 pt-2">
+                    <button onClick={() => setIsAddingContact(false)} className="text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancelar</button>
+                    <button onClick={addContact} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg hover:bg-slate-800 transition-all active:scale-95">Salvar</button>
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
                  {companyContacts.map(c => (
-                   <div key={c.id} className="flex justify-between items-center group p-3 hover:bg-slate-50 rounded-xl transition-all">
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{c.name}</p>
-                        <p className="text-[10px] text-slate-400 font-black uppercase">{c.role}</p>
+                   <div key={c.id} className="group p-5 bg-slate-50 border border-transparent hover:border-blue-100 hover:bg-blue-50/30 rounded-[2rem] transition-all relative">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{c.name}</p>
+                          <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{c.role}</p>
+                        </div>
+                        <button 
+                          onClick={() => setContacts(contacts.filter(item => item.id !== c.id))} 
+                          className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
                       </div>
-                      <button onClick={() => setContacts(contacts.filter(item => item.id !== c.id))} className="text-slate-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                        <Trash2 size={14}/>
-                      </button>
+                      
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {c.phone && (
+                          <button 
+                            onClick={() => handleWhatsApp(c.phone)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm hover:bg-green-600 transition-all"
+                          >
+                            <MessageSquare size={12} fill="currentColor" /> WhatsApp
+                          </button>
+                        )}
+                        {c.email && (
+                          <a 
+                            href={`mailto:${c.email}`}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm hover:border-blue-200 hover:text-blue-600 transition-all"
+                          >
+                            <Mail size={12} /> E-mail
+                          </a>
+                        )}
+                      </div>
                    </div>
                  ))}
+                 {companyContacts.length === 0 && !isAddingContact && (
+                   <div className="text-center py-8">
+                     <User className="mx-auto text-slate-200 mb-2" size={32} />
+                     <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Nenhum contato salvo</p>
+                   </div>
+                 )}
               </div>
             </div>
           </div>
@@ -158,20 +224,16 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
                         <p className="text-sm font-bold text-slate-900 font-mono">123456789123</p>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Razão Social</label>
                         <p className="text-sm font-black text-slate-900 uppercase">{selectedCompany}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Apelido</label>
-                        <p className="text-sm font-bold text-blue-600 font-mono">CAT</p>
                       </div>
                    </div>
 
                    {/* Column 2 */}
                    <div className="space-y-6">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Endereço</label>
-                        <p className="text-sm font-medium text-slate-700">RUA 10, 123 - MUNDO NOVO</p>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Endereço Completo</label>
+                        <p className="text-sm font-medium text-slate-700">RUA 10, 123 - MUNDO NOVO, PIRACICABA - SP</p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -179,23 +241,9 @@ const CompaniesTab: React.FC<CompaniesTabProps> = ({ data, contacts, setContacts
                           <p className="text-sm font-bold text-slate-900">14001-000</p>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cidade</label>
-                          <p className="text-sm font-bold text-slate-900 uppercase">PIRACICABA</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</label>
-                          <p className="text-sm font-bold text-slate-900 uppercase">SP</p>
-                        </div>
-                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Regiões</label>
                           <p className="text-sm font-black text-blue-600 uppercase">SPI</p>
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Segmento da Conta</label>
-                        <p className="text-sm font-black text-slate-900 uppercase">MONTADORA AUTOMOTIVO</p>
                       </div>
                       <div className="space-y-1 pt-4 border-t border-slate-100">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><UserCheck size={12}/> Vendedor Responsável</label>
