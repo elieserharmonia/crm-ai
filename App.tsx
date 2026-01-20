@@ -12,6 +12,7 @@ import { ForecastRow, Goal, SalesPersonProfile, Tab, User, Notification, Contact
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { notificationService } from './services/notificationService';
+import { AlertCircle, UserCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -53,15 +54,22 @@ const App: React.FC = () => {
     localStorage.setItem('crm_ia_contacts_db', JSON.stringify(contacts));
   }, [contacts]);
 
+  // CRITICAL FIX: Data only visible if profile is saved
   const filteredData = useMemo(() => {
     if (!user) return [];
+    
+    // Bloqueio preventivo: Se o perfil não tem nome salvo, não mostra dados sensíveis
+    if (!profile.name || profile.name.trim() === "") return [];
+
     if (user.role === 'gestor') return data;
-    const userName = user.name.toUpperCase().trim();
+    
+    // Usa o nome salvo no PERFIL para filtrar, garantindo sincronia com o que foi configurado
+    const profileName = profile.name.toUpperCase().trim();
     return data.filter(row => {
       const respName = (row['RESP.'] || '').toUpperCase().trim();
-      return respName.includes(userName) || userName.includes(respName);
+      return respName.includes(profileName) || profileName.includes(respName);
     });
-  }, [data, user]);
+  }, [data, user, profile]);
 
   const updateRow = (updatedRow: ForecastRow) => {
     setData(data.map(r => r.id === updatedRow.id ? updatedRow : r));
@@ -80,37 +88,58 @@ const App: React.FC = () => {
 
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
+  const isProfileEmpty = !profile.name || profile.name.trim() === "";
+
   return (
     <Layout 
       activeTab={activeTab} 
       setActiveTab={handleTabChange} 
       user={user} 
+      profile={profile}
       onLogout={handleLogout}
       notifications={notifications}
     >
       <div className="h-full relative">
-        {activeTab === Tab.Forecast && (
-          <ForecastTab 
-            data={filteredData} 
-            setData={setData} 
-            onRowSelect={setSelectedRow} 
-            user={user} 
-          />
+        {isProfileEmpty && activeTab !== Tab.Settings ? (
+          <div className="flex flex-col items-center justify-center h-full py-20 text-center animate-in fade-in duration-700">
+            <div className="w-24 h-24 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-blue-200">
+              <UserCircle size={48} />
+            </div>
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Acesso Bloqueado</h2>
+            <p className="text-slate-500 max-w-sm mt-2 font-medium">
+              Por segurança, seus dados de Forecast serão exibidos apenas após você configurar e salvar seu <strong>Nome Completo</strong> nas configurações.
+            </p>
+            <button 
+              onClick={() => setActiveTab(Tab.Settings)}
+              className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+            >
+              CONFIGURAR PERFIL AGORA
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === Tab.Forecast && (
+              <ForecastTab 
+                data={filteredData} 
+                setData={setData} 
+                onRowSelect={setSelectedRow} 
+                user={user} 
+              />
+            )}
+            {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} />}
+            {activeTab === Tab.Goals && <GoalsTab data={filteredData} goals={goals} setGoals={setGoals} onGoalClick={() => setActiveTab(Tab.Forecast)} />}
+            {activeTab === Tab.Companies && (
+              <CompaniesTab 
+                data={filteredData} 
+                contacts={contacts} 
+                setContacts={setContacts}
+                resetTrigger={companiesResetTrigger}
+                onFilterByCompany={() => setActiveTab(Tab.Forecast)} 
+              />
+            )}
+            {activeTab === Tab.Settings && <SettingsTab profile={profile} setProfile={setProfile} user={user} />}
+          </>
         )}
-        {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} />}
-        {activeTab === Tab.Goals && <GoalsTab data={filteredData} goals={goals} setGoals={setGoals} onGoalClick={() => setActiveTab(Tab.Forecast)} />}
-        {activeTab === Tab.Companies && (
-          <CompaniesTab 
-            data={filteredData} 
-            contacts={contacts} 
-            setContacts={setContacts}
-            resetTrigger={companiesResetTrigger}
-            onFilterByCompany={(company) => {
-               setActiveTab(Tab.Forecast);
-            }} 
-          />
-        )}
-        {activeTab === Tab.Settings && <SettingsTab profile={profile} setProfile={setProfile} user={user} />}
 
         {selectedRow && (
           <DetailPanel 

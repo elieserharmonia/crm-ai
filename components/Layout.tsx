@@ -8,26 +8,25 @@ import {
   Settings, 
   Menu, 
   X,
-  ChevronRight,
   LogOut,
-  User as UserIcon,
-  ShieldCheck,
   Bell,
   AlertTriangle,
-  Info
+  Info,
+  UserCircle
 } from 'lucide-react';
-import { Tab, User, Notification } from '../types';
+import { Tab, User, Notification, SalesPersonProfile } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   user: User;
+  profile: SalesPersonProfile;
   onLogout: () => void;
   notifications: Notification[];
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, notifications }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, profile, onLogout, notifications }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -38,6 +37,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: Tab.Companies, label: 'Empresas', icon: Building2 },
     { id: Tab.Settings, label: 'Configurações', icon: Settings },
   ];
+
+  const displayName = profile.name || "";
+  const displayEmail = profile.email || "";
+  const isProfileConfigured = !!profile.name;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
@@ -71,17 +74,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
 
         <div className="p-4 border-t border-slate-800 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white shadow-md">{user.name.charAt(0)}</div>
+              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white shadow-md overflow-hidden">
+                {profile.logo ? (
+                  <img src={profile.logo} className="w-full h-full object-cover" alt="Logo" />
+                ) : (
+                  <span className="text-blue-400">{isProfileConfigured ? displayName.charAt(0) : '?'}</span>
+                )}
+              </div>
               {isSidebarOpen && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-semibold truncate">{user.name}</span>
-                  <span className="text-[10px] text-slate-500 font-black uppercase">{user.role}</span>
+                  <span className={`text-sm font-semibold truncate ${!isProfileConfigured ? 'text-slate-500 italic' : 'text-white'}`}>
+                    {isProfileConfigured ? displayName : "Configurar Perfil"}
+                  </span>
+                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+                    {isProfileConfigured ? user.role : 'Ação Necessária'}
+                  </span>
                 </div>
               )}
             </div>
             {isSidebarOpen && (
-              <button onClick={onLogout} className="w-full flex items-center gap-2 text-xs font-bold text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors">
-                <LogOut size={14} /> Sair
+              <button onClick={onLogout} className="w-full flex items-center gap-2 text-[10px] font-black uppercase text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors tracking-widest">
+                <LogOut size={14} /> Sair do Sistema
               </button>
             )}
         </div>
@@ -94,6 +107,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           </h1>
           
           <div className="flex items-center gap-6">
+            {!isProfileConfigured && (
+              <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[10px] font-black text-amber-600 uppercase tracking-widest animate-pulse">
+                <AlertTriangle size={12} /> Complete seu perfil para ver os dados
+              </div>
+            )}
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -101,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
               >
                 <Bell size={20} className="text-slate-600" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
                     {notifications.length}
                   </span>
                 )}
@@ -120,7 +138,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                            {n.type === 'warning' ? <AlertTriangle className="text-amber-500 shrink-0" size={18} /> : <Info className="text-blue-500 shrink-0" size={18} />}
                            <div>
                              <p className="text-sm font-bold text-slate-800">{n.title}</p>
-                             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
+                             <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
                            </div>
                         </div>
                       ))
