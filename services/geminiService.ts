@@ -3,132 +3,130 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { ForecastRow, SalesPersonProfile, User } from "../types";
 
 /**
- * Helper seguro para obter a chave de API.
- * Em alguns ambientes, process.env pode não estar definido globalmente.
+ * Initializes the GoogleGenAI client using the provided environment variable.
+ * The API key is managed externally and provided via process.env.API_KEY.
  */
-const getApiKey = (): string => {
-  try {
-    // @ts-ignore
-    return (typeof process !== 'undefined' && process.env && process.env.API_KEY) ? process.env.API_KEY : "";
-  } catch (e) {
-    return "";
-  }
-};
-
 const getAI = () => {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    console.warn("CRM-IA: API Key não detectada. As funções de IA podem não responder.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const geminiService = {
+  // Generates strategic advice for sales managers based on current forecast data
   async generateManagerAdvice(forecast: ForecastRow[], profile: SalesPersonProfile) {
+    const ai = getAI();
+    
+    // Summary of data for context
+    const topOpportunities = [...forecast]
+      .sort((a, b) => b.AMOUNT - a.AMOUNT)
+      .slice(0, 15)
+      .map(r => `- ${r.CUSTOMER}: R$ ${r.AMOUNT} (${r.Confidence}% conf.)`)
+      .join('\n');
+
+    const context = `
+      Persona: Você é o Gerente Estratégico de Vendas (AI Sales Manager).
+      Especialista sendo aconselhado: ${profile.name || 'Consultor'}.
+      Setor de Atuação: Indústria Automotiva e Linha Amarela.
+      Dados do Pipeline Atual (Principais Oportunidades):
+      ${topOpportunities}
+      Total de Oportunidades: ${forecast.length}.
+    `;
+
+    const prompt = `
+      Como Gerente IA, forneça um plano de ação estratégico. 
+      Analise o volume financeiro vs confiança. 
+      Sugira 3 ações imediatas para fechar os negócios acima de 80% e como recuperar os negócios 'sonho' (abaixo de 30%).
+      Seja direto, profissional e motivador.
+    `;
+
     try {
-      const ai = getAI();
-      const context = `
-        Persona: Gerente de Vendas Estratégico com 20 anos de experiência em Indústria e Montadoras.
-        Usuário: ${profile.name || 'Consultor'}.
-        Dados Atuais: ${forecast.length} oportunidades no pipeline.
-        Principais Clientes: ${Array.from(new Set(forecast.map(r => r.CUSTOMER))).slice(0, 5).join(', ')}.
-      `;
-
-      const prompt = `Analise os dados fornecidos e sugira abordagens de vendas personalizadas, focando em como aumentar a confiança (Confidence) nos negócios com menor percentual.`;
-
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: context + prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
+        model: 'gemini-3-pro-preview', // High-quality reasoning model
+        contents: [{ parts: [{ text: context + prompt }] }],
       });
 
-      let text = response.text || '';
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      if (chunks) {
-        const links = chunks
-          .filter((c: any) => c.web?.uri)
-          .map((c: any) => `\n- [${c.web.title || 'Ver Fonte'}](${c.web.uri})`)
-          .join('');
-        if (links) text += `\n\n### Referências de Pesquisa:\n${links}`;
-      }
-      return text;
-    } catch (e) {
+      return response.text || "A IA não retornou um conteúdo válido.";
+    } catch (e: any) {
       console.error("Gemini Advice Error:", e);
-      throw new Error("Falha na comunicação com o cérebro da IA.");
+      throw e;
     }
   },
 
+  // Generates a technical visit report for a specific customer/opportunity
   async generateVisitReport(row: ForecastRow, profile: SalesPersonProfile) {
+    const ai = getAI();
+    const prompt = `Gere um relatório de visita técnica para o cliente ${row.CUSTOMER}. Oportunidade: ${row.DESCRIPTION}. Consultor: ${profile.name}.`;
+    
     try {
-      const ai = getAI();
-      const prompt = `Como Consultor de Vendas ${profile.name}, gere um relatório de visita técnica/comercial estruturado para o cliente ${row.CUSTOMER}. 
-      Contexto do Negócio: ${row.DESCRIPTION}. 
-      Valor da Oportunidade: R$ ${row.AMOUNT}. 
-      Status Atual: ${row.Confidence}% de confiança.
-      Inclua: 1. Objetivo da Visita, 2. Pontos Discutidos, 3. Próximos Passos (Next Steps).`;
-
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: prompt,
+        contents: [{ parts: [{ text: prompt }] }],
       });
       return response.text;
-    } catch (e) {
+    } catch (e: any) {
       console.error("Gemini Report Error:", e);
-      throw new Error("Não foi possível gerar a análise detalhada agora.");
+      throw e;
     }
   },
 
+  // Generates a welcome email for newly registered users
   async generateWelcomeEmail(user: User) {
     try {
       const ai = getAI();
-      const prompt = `Escreva um e-mail de boas-vindas motivacional para o novo consultor ${user.name} que acaba de entrar na plataforma CRM-IA.`;
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: prompt,
+        contents: `Escreva um e-mail de boas-vindas para ${user.name}.`,
       });
       return response.text;
     } catch (e) {
-      return `Bem-vindo ao CRM-IA, ${user.name}! Estamos prontos para acelerar suas vendas.`;
+      return `Bem-vindo ao CRM-IA!`;
     }
   },
 
+  // FIX: Implemented missing planVisitsWithMaps method required by MapTab.tsx
+  // Uses Google Maps grounding which is exclusive to Gemini 2.5 series models.
   async planVisitsWithMaps(forecast: ForecastRow[], location?: { latitude: number; longitude: number }) {
+    const ai = getAI();
+    const companies = [...new Set(forecast.map(r => r.CUSTOMER))].filter(Boolean).join(', ');
+    const prompt = `Planeje um roteiro de visitas logístico otimizado para as seguintes empresas: ${companies}. Considere a melhor rota saindo da minha localização atual se disponível.`;
+    
     try {
-      const ai = getAI();
-      const context = `Oportunidades ativas: ${forecast.map(f => `${f.CUSTOMER} em ${f.UF}`).join(', ')}.`;
-      const prompt = `Planeje a melhor rota de visitas para esses clientes, considerando que as montadoras ficam em pólos industriais específicos.`;
-
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-lite-latest',
-        contents: context + prompt,
+        model: 'gemini-2.5-flash', // Required model for Maps Grounding
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           tools: [{ googleMaps: {} }],
-          toolConfig: location ? {
-            retrievalConfig: {
-              latLng: {
-                latitude: location.latitude,
-                longitude: location.longitude
+          ...(location && {
+            toolConfig: {
+              retrievalConfig: {
+                latLng: {
+                  latitude: location.latitude,
+                  longitude: location.longitude
+                }
               }
             }
-          } : undefined
-        }
+          })
+        },
       });
 
-      let text = response.text || '';
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      if (chunks) {
-        const links = chunks
-          .filter((c: any) => c.maps?.uri)
-          .map((c: any) => `\n- [${c.maps.title || 'Ver no Mapa'}](${c.maps.uri})`)
-          .join('');
-        if (links) text += `\n\n### Locais Encontrados:\n${links}`;
+      let text = response.text || "Não foi possível gerar o roteiro logístico.";
+      
+      // Mandatory: Extract and display URLs from groundingChunks when using Google Maps tool
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (groundingChunks && groundingChunks.length > 0) {
+        const links = groundingChunks
+          .filter((chunk: any) => chunk.maps && chunk.maps.uri)
+          .map((chunk: any) => `- [${chunk.maps.title || 'Ver Localização'}](${chunk.maps.uri})`)
+          .join('\n');
+          
+        if (links) {
+          text += "\n\n### Referências do Google Maps:\n" + links;
+        }
       }
+      
       return text;
-    } catch (e) {
-      console.error("Gemini Maps Error:", e);
-      throw new Error("Erro ao planejar rotas geográficas.");
+    } catch (e: any) {
+      console.error("Gemini Maps Grounding Error:", e);
+      throw e;
     }
   }
 };
