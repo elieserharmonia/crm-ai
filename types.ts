@@ -18,6 +18,13 @@ export interface Contact {
   email: string;
 }
 
+export interface DiaryEntry {
+  id: string;
+  companyName: string;
+  content: string;
+  lastUpdate: string;
+}
+
 export interface ForecastRow {
   id: string;
   'Unnamed: 0': string | number;
@@ -68,6 +75,7 @@ export enum Tab {
   Dashboard = 'painel',
   Goals = 'metas',
   Companies = 'empresas',
+  Diary = 'diario',
   Settings = 'configuracoes'
 }
 

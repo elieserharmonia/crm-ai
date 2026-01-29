@@ -12,7 +12,9 @@ import {
   Database,
   XCircle,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Save
 } from 'lucide-react';
 import { ForecastRow, User } from '../types';
 
@@ -32,29 +34,31 @@ interface DebugLog {
 const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [importPreview, setImportPreview] = useState<ForecastRow[] | null>(null);
+  const [isAddingManual, setIsAddingManual] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  
+  // Novo estado para cadastro manual
+  const [manualRow, setManualRow] = useState<Partial<ForecastRow>>({
+    CUSTOMER: '',
+    SUPPLIER: '',
+    DESCRIPTION: '',
+    AMOUNT: 0,
+    UF: 'SP',
+    Confidence: 10,
+    'RESP.': user.name.toUpperCase()
+  });
 
   const addLog = (message: string, type: 'info' | 'error' | 'success' | 'debug' = 'info') => {
     setDebugLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), message, type }, ...prev]);
   };
 
-  /**
-   * CRITICAL: Expand merged cells before processing.
-   * This ensures that columns like CUSTOMER or DESCRIPTION that are merged across multiple rows
-   * are duplicated into every sub-row, preventing data loss.
-   */
   const expandMergedCells = (ws: XLSX.WorkSheet) => {
-    if (!ws['!merges']) {
-      addLog("No merged cells detected.", "info");
-      return;
-    }
-    addLog(`Expanding ${ws['!merges'].length} merged regions...`, "debug");
+    if (!ws['!merges']) return;
     ws['!merges'].forEach((merge) => {
       const startCellRef = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
       const cellValue = ws[startCellRef];
       if (!cellValue) return;
-
       for (let r = merge.s.r; r <= merge.e.r; r++) {
         for (let c = merge.s.c; c <= merge.e.c; c++) {
           if (r === merge.s.r && c === merge.s.c) continue;
@@ -68,160 +72,98 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setImportErrors([]);
     setDebugLogs([]);
-    addLog(`Reading file: ${file.name}`);
-
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary', cellNF: true, cellStyles: true });
-        
-        const sheetName = "01.2026";
-        const ws = wb.Sheets[sheetName];
-        
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const ws = wb.Sheets["01.2026"];
         if (!ws) { 
-          const msg = `FATAL ERROR: Sheet "${sheetName}" not found. Ensure the tab is named exactly "01.2026".`;
-          addLog(msg, 'error');
+          const msg = `Planilha "01.2026" não encontrada.`;
           setImportErrors([msg]);
           return; 
         }
-
-        // Expand Merges First
         expandMergedCells(ws);
-
-        // Convert to Array-of-Arrays (Matrix)
-        const matrix: any[][] = XLSX.utils.sheet_to_json(ws, { 
-          header: 1, 
-          defval: "", 
-          raw: true 
-        });
-        
-        // Header Detection: Scan first 30 rows for exact critical headers
-        const criticalMarkers = ["DESCRIPTION", "AMOUNT", "FOLLOW-UP", "CONTATOS", "CUSTOMER", "SUPPLIER", "RESP.", "Confidence"];
+        const matrix: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        const criticalMarkers = ["DESCRIPTION", "AMOUNT", "CUSTOMER", "RESP."];
         let headerRowIndex = -1;
         let detectedHeaders: string[] = [];
-
         for (let r = 0; r < Math.min(30, matrix.length); r++) {
           const row = matrix[r].map(c => String(c || "").trim());
-          const matchCount = criticalMarkers.filter(marker => row.includes(marker)).length;
-          
-          if (matchCount >= 4) { // Confidence threshold for header row
+          if (criticalMarkers.filter(marker => row.includes(marker)).length >= 3) {
             headerRowIndex = r;
             detectedHeaders = row;
             break;
           }
         }
-
         if (headerRowIndex === -1) {
-          const msg = `FATAL ERROR: Could not locate header row. Expected exact headers: ${criticalMarkers.join(", ")}`;
-          addLog(msg, "error");
-          setImportErrors([msg]);
+          setImportErrors(["Cabeçalhos não localizados."]);
           return;
         }
-
-        addLog(`Header detected at matrix row index: ${headerRowIndex}`, "success");
-        addLog(`Full Detected Header List: ${detectedHeaders.join(" | ")}`, "debug");
-
         const getIdx = (name: string) => detectedHeaders.indexOf(name);
         const colMap = {
-          resp: getIdx("RESP."),
-          customer: getIdx("CUSTOMER"),
-          supplier: getIdx("SUPPLIER"),
-          description: getIdx("DESCRIPTION"),
-          amount: getIdx("AMOUNT"),
-          uf: getIdx("UF"),
-          confidence: getIdx("Confidence"),
-          jan: getIdx("JAN"),
-          fev: getIdx("FEV"),
-          mar: getIdx("MAR"),
-          y2026: getIdx("2026"),
-          followUp: getIdx("FOLLOW-UP"),
+          resp: getIdx("RESP."), customer: getIdx("CUSTOMER"), supplier: getIdx("SUPPLIER"),
+          description: getIdx("DESCRIPTION"), amount: getIdx("AMOUNT"), uf: getIdx("UF"),
+          confidence: getIdx("Confidence"), jan: getIdx("JAN"), fev: getIdx("FEV"),
+          mar: getIdx("MAR"), y2026: getIdx("2026"), followUp: getIdx("FOLLOW-UP"),
           contatos: getIdx("CONTATOS")
         };
-
-        // Strict Integrity Validation: FAIL LOUDLY if critical columns missing
-        const missingCols = Object.entries(colMap)
-          .filter(([key, idx]) => idx === -1 && ["description", "amount", "followUp", "contatos", "customer"].includes(key))
-          .map(([key]) => key.toUpperCase());
-
-        if (missingCols.length > 0) {
-          const msg = `FATAL ERROR: Missing critical columns in Excel: ${missingCols.join(", ")}`;
-          addLog(msg, "error");
-          setImportErrors([msg]);
-          return;
-        }
-
         const importedRows: ForecastRow[] = matrix.slice(headerRowIndex + 1)
-          .filter(row => row.some(cell => String(cell).trim() !== "")) // Skip empty lines
-          .map((row, idx) => {
-            // Robust amount parsing
-            const rawAmt = row[colMap.amount];
-            let amount = 0;
-            if (typeof rawAmt === 'number') {
-              amount = rawAmt;
-            } else {
-              amount = parseFloat(String(rawAmt || '0').replace(/[^\d.-]/g, '')) || 0;
-            }
-
-            // Robust confidence parsing
-            const rawConf = row[colMap.confidence];
-            let confidence = 0;
-            if (typeof rawConf === 'number') {
-              confidence = rawConf <= 1 ? rawConf * 100 : rawConf;
-            } else {
-              confidence = parseFloat(String(rawConf || '0')) || 0;
-            }
-
-            return {
-              id: `row-${idx}-${Date.now()}`,
-              'Unnamed: 0': idx + 1,
-              'RESP.': String(row[colMap.resp] || "").trim(),
-              'CUSTOMER': String(row[colMap.customer] || "").trim(),
-              'SUPPLIER': String(row[colMap.supplier] || "").trim(),
-              'DESCRIPTION': String(row[colMap.description] || ""),
-              'AMOUNT': amount,
-              'UF': String(row[colMap.uf] || "").trim(),
-              'Confidence': Math.round(confidence),
-              'JAN': String(row[colMap.jan] || "").toLowerCase() === 'x' ? 'x' : '',
-              'FEV': String(row[colMap.fev] || "").toLowerCase() === 'x' ? 'x' : '',
-              'MAR': String(row[colMap.mar] || "").toLowerCase() === 'x' ? 'x' : '',
-              '2026': String(row[colMap.y2026] || "").toLowerCase() === 'x' ? 'x' : '',
-              'FOLLOW-UP': String(row[colMap.followUp] || ""),
-              'CONTATOS': String(row[colMap.contatos] || ""),
-              oweInfoToClient: false,
-            };
-          });
-
-        // Debug sample output for integrity check
-        if (importedRows.length > 0) {
-          addLog(`Data verification successful. Imported ${importedRows.length} rows.`, 'success');
-          addLog(`Sample Check (Row 1):`, 'debug');
-          addLog(`  CUSTOMER: ${importedRows[0].CUSTOMER}`, 'debug');
-          addLog(`  DESCRIPTION: ${importedRows[0].DESCRIPTION.substring(0, 30)}...`, 'debug');
-          addLog(`  AMOUNT: ${importedRows[0].AMOUNT}`, 'debug');
-          addLog(`  FOLLOW-UP: ${importedRows[0]['FOLLOW-UP'].substring(0, 30)}...`, 'debug');
-          addLog(`  CONTATOS: ${importedRows[0].CONTATOS.substring(0, 30)}...`, 'debug');
-          
-          // Double check for empty critical data
-          const emptyRate = importedRows.filter(r => !r.DESCRIPTION || r.AMOUNT === 0).length / importedRows.length;
-          if (emptyRate > 0.8) {
-            const warn = "Warning: 80% of rows have empty Description or 0 Amount. Is the header row correct?";
-            addLog(warn, 'error');
-            setImportErrors([warn]);
-          }
-        }
-
+          .filter(row => row.some(cell => String(cell).trim() !== ""))
+          .map((row, idx) => ({
+            id: `row-${idx}-${Date.now()}`,
+            'Unnamed: 0': idx + 1,
+            'RESP.': String(row[colMap.resp] || "").trim(),
+            'CUSTOMER': String(row[colMap.customer] || "").trim(),
+            'SUPPLIER': String(row[colMap.supplier] || "").trim(),
+            'DESCRIPTION': String(row[colMap.description] || ""),
+            'AMOUNT': parseFloat(String(row[colMap.amount] || '0').replace(/[^\d.-]/g, '')) || 0,
+            'UF': String(row[colMap.uf] || "").trim(),
+            'Confidence': Math.round(parseFloat(String(row[colMap.confidence] || '0')) || 0),
+            'JAN': String(row[colMap.jan] || "").toLowerCase() === 'x' ? 'x' : '',
+            'FEV': String(row[colMap.fev] || "").toLowerCase() === 'x' ? 'x' : '',
+            'MAR': String(row[colMap.mar] || "").toLowerCase() === 'x' ? 'x' : '',
+            '2026': String(row[colMap.y2026] || "").toLowerCase() === 'x' ? 'x' : '',
+            'FOLLOW-UP': String(row[colMap.followUp] || ""),
+            'CONTATOS': String(row[colMap.contatos] || ""),
+            oweInfoToClient: false,
+          }));
         setImportPreview(importedRows);
       } catch (err: any) {
-        addLog(`FATAL SYSTEM ERROR: ${err.message}`, 'error');
-        setImportErrors([`Process aborted: ${err.message}`]);
+        setImportErrors([err.message]);
       }
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
+  };
+
+  const saveManualRow = () => {
+    if (!manualRow.CUSTOMER || !manualRow.DESCRIPTION || !manualRow.AMOUNT) {
+      alert("Por favor, preencha os campos obrigatórios: Cliente, Descrição e Valor.");
+      return;
+    }
+    const newEntry: ForecastRow = {
+      id: `manual-${Date.now()}`,
+      'Unnamed: 0': data.length + 1,
+      'RESP.': manualRow['RESP.'] || user.name.toUpperCase(),
+      CUSTOMER: manualRow.CUSTOMER || '',
+      SUPPLIER: manualRow.SUPPLIER || '',
+      DESCRIPTION: manualRow.DESCRIPTION || '',
+      AMOUNT: manualRow.AMOUNT || 0,
+      UF: manualRow.UF || 'SP',
+      Confidence: manualRow.Confidence || 10,
+      JAN: '', FEV: '', MAR: '', '2026': '',
+      'FOLLOW-UP': '',
+      'CONTATOS': '',
+      oweInfoToClient: false
+    };
+    setData([newEntry, ...data]);
+    setIsAddingManual(false);
+    setManualRow({
+      CUSTOMER: '', SUPPLIER: '', DESCRIPTION: '', AMOUNT: 0, UF: 'SP', Confidence: 10, 'RESP.': user.name.toUpperCase()
+    });
   };
 
   const filteredData = useMemo(() => {
@@ -231,7 +173,6 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
     );
   }, [data, searchTerm]);
 
-  // EXACT English headers as requested
   const excelHeaders = ["RESP.", "CUSTOMER", "SUPPLIER", "DESCRIPTION", "AMOUNT", "UF", "Confidence", "JAN", "FEV", "MAR", "2026", "FOLLOW-UP", "CONTATOS"];
 
   return (
@@ -242,17 +183,27 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
             <input 
               type="text" 
-              placeholder="Search across all Excel columns..."
+              placeholder="Pesquisar em todas as colunas..."
               className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-        <label className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 cursor-pointer font-black shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
-          <Upload size={20} /> IMPORTAR DADOS
-          <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} />
-        </label>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsAddingManual(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 cursor-pointer font-black shadow-lg shadow-slate-900/10 active:scale-95 transition-all uppercase text-[11px] tracking-widest"
+          >
+            <Plus size={18} /> Nova Oportunidade
+          </button>
+
+          <label className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 cursor-pointer font-black shadow-lg shadow-blue-900/20 active:scale-95 transition-all uppercase text-[11px] tracking-widest">
+            <Upload size={18} /> Importar Dados
+            <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} />
+          </label>
+        </div>
       </div>
 
       <div className="flex-1 bg-white border border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col min-h-0">
@@ -260,7 +211,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
           <table className="w-full text-[13px] text-left border-collapse min-w-[1800px]">
             <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="p-5 font-black text-slate-500 uppercase tracking-widest text-[10px]">Actions</th>
+                <th className="p-5 font-black text-slate-500 uppercase tracking-widest text-[10px]">Ações</th>
                 {excelHeaders.map(h => (
                   <th key={h} className="p-5 font-black text-slate-900 uppercase tracking-widest text-[11px] whitespace-nowrap">{h}</th>
                 ))}
@@ -297,8 +248,8 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                   <td colSpan={14} className="p-24 text-center">
                     <div className="flex flex-col items-center gap-4 text-slate-400">
                       <Database size={56} className="opacity-10" />
-                      <p className="font-bold text-lg">No data matches your search or no Excel imported yet.</p>
-                      <p className="text-sm">Import the original file with headers: DESCRIPTION, AMOUNT, FOLLOW-UP, CONTATOS...</p>
+                      <p className="font-bold text-lg">Nenhum dado encontrado.</p>
+                      <p className="text-sm">Importe um arquivo Excel ou adicione uma nova oportunidade manual.</p>
                     </div>
                   </td>
                 </tr>
@@ -308,81 +259,161 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
         </div>
       </div>
 
+      {/* Modal de Cadastro Manual */}
+      {isAddingManual && (
+        <div className="fixed inset-0 bg-slate-900/90 z-[300] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-500">
+              <div className="p-10 border-b flex justify-between items-center bg-slate-50/50">
+                 <div className="flex items-center gap-4">
+                    <div className="p-4 bg-blue-100 text-blue-600 rounded-3xl"><Plus size={32}/></div>
+                    <div>
+                       <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Nova Oportunidade</h3>
+                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Cadastro Manual de Negócio</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setIsAddingManual(false)} className="p-4 hover:bg-white rounded-2xl shadow-sm text-slate-400 transition-all"><CloseIcon size={24}/></button>
+              </div>
+
+              <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cliente (Obrigatório)</label>
+                       <input 
+                          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-bold text-slate-800"
+                          placeholder="Ex: Caterpillar Brasil"
+                          value={manualRow.CUSTOMER}
+                          onChange={e => setManualRow({...manualRow, CUSTOMER: e.target.value})}
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Fornecedor</label>
+                       <input 
+                          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-bold text-slate-800"
+                          placeholder="Ex: Eaton"
+                          value={manualRow.SUPPLIER}
+                          onChange={e => setManualRow({...manualRow, SUPPLIER: e.target.value})}
+                       />
+                    </div>
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Descrição do Negócio (Obrigatório)</label>
+                    <textarea 
+                       className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-32 outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                       placeholder="Descreva os itens ou escopo da proposta..."
+                       value={manualRow.DESCRIPTION}
+                       onChange={e => setManualRow({...manualRow, DESCRIPTION: e.target.value})}
+                    />
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Valor (R$)</label>
+                       <input 
+                          type="number"
+                          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black"
+                          placeholder="0.00"
+                          value={manualRow.AMOUNT}
+                          onChange={e => setManualRow({...manualRow, AMOUNT: parseFloat(e.target.value) || 0})}
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">UF</label>
+                       <select 
+                          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black"
+                          value={manualRow.UF}
+                          onChange={e => setManualRow({...manualRow, UF: e.target.value})}
+                       >
+                          {['SP', 'MG', 'PR', 'RS', 'SC', 'RJ', 'GO', 'AM', 'MT', 'MS', 'PE', 'CE', 'BA'].map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                       </select>
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Confiança (%)</label>
+                       <select 
+                          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black"
+                          value={manualRow.Confidence}
+                          onChange={e => setManualRow({...manualRow, Confidence: parseInt(e.target.value)})}
+                       >
+                          {[0, 10, 30, 50, 80, 90, 100].map(c => <option key={c} value={c}>{c}%</option>)}
+                       </select>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="p-10 border-t bg-slate-50/50 flex justify-end gap-6">
+                 <button onClick={() => setIsAddingManual(false)} className="px-10 py-4 font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all text-xs">Cancelar</button>
+                 <button 
+                    onClick={saveManualRow}
+                    className="flex items-center gap-3 px-14 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all active:scale-95 uppercase text-xs tracking-widest"
+                 >
+                    <Save size={18} /> Salvar Oportunidade
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Modal de Importação (Mantido original) */}
       {importPreview && (
-        <div className="fixed inset-0 bg-slate-900/95 z-[200] flex items-center justify-center p-6 backdrop-blur-xl animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-slate-900/95 z-[400] flex items-center justify-center p-6 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
              <div className="p-10 border-b flex justify-between items-center bg-slate-50/50">
                <div className="flex items-center gap-4">
                  <div className="p-4 bg-green-100 text-green-600 rounded-3xl"><CheckCircle2 size={32}/></div>
                  <div>
-                   <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tight">VALIDATE EXCEL DATA</h3>
-                   <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Integrity & Schema Verification</p>
+                   <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Validar Importação</h3>
+                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Verificação de Integridade</p>
                  </div>
                </div>
                <button onClick={() => setImportPreview(null)} className="p-4 hover:bg-white rounded-2xl shadow-sm text-slate-400 transition-all"><CloseIcon size={24}/></button>
              </div>
 
-             <div className="flex-1 flex flex-col min-h-0">
-                <div className="bg-slate-900 p-6 font-mono text-[10px] text-slate-400 space-y-1 overflow-auto max-h-48 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-blue-400 font-black mb-2 uppercase tracking-widest"><Terminal size={14}/> Diagnostic Log</div>
-                  {debugLogs.map((log, i) => (
-                    <div key={i} className={`flex gap-3 ${log.type === 'error' ? 'text-red-400 font-bold' : log.type === 'success' ? 'text-green-400' : log.type === 'debug' ? 'text-blue-300 opacity-80' : ''}`}>
-                      <span className="opacity-40">[{log.timestamp}]</span>
-                      <span>{log.message}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex-1 overflow-auto p-10 custom-scrollbar">
-                   {importErrors.length > 0 ? (
-                     <div className="h-full flex flex-col items-center justify-center space-y-6 text-center">
-                        <XCircle size={64} className="text-red-500" />
-                        <h4 className="text-2xl font-black text-slate-900 uppercase">Import Aborted: Integrity Check Failed</h4>
-                        {importErrors.map((err, i) => (
-                          <div key={i} className="flex items-center gap-3 text-red-600 font-bold bg-red-50 px-6 py-4 rounded-2xl border border-red-100 shadow-sm max-w-2xl">
-                             <AlertCircle size={20} />
-                             {err}
-                          </div>
-                        ))}
-                     </div>
-                   ) : (
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">Previewing First 5 Rows (Raw Mapping Check)</div>
-                      <table className="w-full text-[11px] text-left border rounded-xl overflow-hidden shadow-sm">
-                        <thead className="bg-slate-50 text-slate-400 uppercase font-black tracking-widest text-[10px]">
-                          <tr>
-                            <th className="p-4 border-r">CUSTOMER</th>
-                            <th className="p-4 border-r">DESCRIPTION</th>
-                            <th className="p-4 border-r text-right">AMOUNT</th>
-                            <th className="p-4 border-r">FOLLOW-UP</th>
-                            <th className="p-4">CONTATOS</th>
+             <div className="flex-1 overflow-auto p-10 custom-scrollbar">
+                {importErrors.length > 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center space-y-6 text-center">
+                     <XCircle size={64} className="text-red-500" />
+                     <h4 className="text-2xl font-black text-slate-900 uppercase">Falha na Validação</h4>
+                     {importErrors.map((err, i) => (
+                       <div key={i} className="flex items-center gap-3 text-red-600 font-bold bg-red-50 px-6 py-4 rounded-2xl border border-red-100 shadow-sm max-w-2xl">
+                          <AlertCircle size={20} /> {err}
+                       </div>
+                     ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">Amostra dos primeiros 5 registros</div>
+                    <table className="w-full text-[11px] text-left border rounded-xl overflow-hidden shadow-sm">
+                      <thead className="bg-slate-50 text-slate-400 uppercase font-black tracking-widest text-[10px]">
+                        <tr>
+                          <th className="p-4 border-r">CLIENTE</th>
+                          <th className="p-4 border-r">DESCRIÇÃO</th>
+                          <th className="p-4 border-r text-right">VALOR</th>
+                          <th className="p-4">CONF.</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {importPreview.slice(0, 5).map((row, i) => (
+                          <tr key={i}>
+                            <td className="p-4 font-black uppercase text-blue-600 border-r">{row.CUSTOMER || "MISSING"}</td>
+                            <td className="p-4 italic text-slate-600 truncate max-w-[250px] border-r">{row.DESCRIPTION || "MISSING"}</td>
+                            <td className="p-4 text-right font-mono font-black border-r">{row.AMOUNT.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-4 font-bold">{row.Confidence}%</td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {importPreview.slice(0, 5).map((row, i) => (
-                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="p-4 font-black uppercase text-blue-600 border-r">{row.CUSTOMER || "MISSING"}</td>
-                              <td className="p-4 italic text-slate-600 truncate max-w-[250px] border-r">{row.DESCRIPTION || "MISSING"}</td>
-                              <td className="p-4 text-right font-mono font-black border-r">{row.AMOUNT.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                              <td className="p-4 italic text-slate-400 truncate max-w-[200px] border-r">{row['FOLLOW-UP'] || "EMPTY"}</td>
-                              <td className="p-4 font-bold truncate max-w-[150px]">{row.CONTATOS || "EMPTY"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                   )}
-                </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
              </div>
 
              <div className="p-10 border-t bg-slate-50/50 flex justify-end gap-6">
-               <button onClick={() => setImportPreview(null)} className="px-10 py-4 font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all">Cancel</button>
+               <button onClick={() => setImportPreview(null)} className="px-10 py-4 font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all text-xs">Cancelar</button>
                <button 
                   disabled={importErrors.length > 0}
                   onClick={() => { setData(importPreview); setImportPreview(null); }} 
                   className={`px-14 py-4 rounded-2xl font-black shadow-xl transition-all active:scale-95 uppercase text-xs tracking-widest ${importErrors.length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                >
-                 Commit to CRM Database
+                 Confirmar Importação
                </button>
              </div>
           </div>

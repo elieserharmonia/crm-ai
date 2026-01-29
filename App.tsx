@@ -5,6 +5,7 @@ import ForecastTab from './tabs/ForecastTab';
 import DashboardTab from './tabs/DashboardTab';
 import GoalsTab from './tabs/GoalsTab';
 import CompaniesTab from './tabs/CompaniesTab';
+import DiaryTab from './tabs/DiaryTab';
 import SettingsTab from './tabs/SettingsTab';
 import DetailPanel from './components/DetailPanel';
 import LoginPage from './components/LoginPage';
@@ -54,16 +55,10 @@ const App: React.FC = () => {
     localStorage.setItem('crm_ia_contacts_db', JSON.stringify(contacts));
   }, [contacts]);
 
-  // CRITICAL FIX: Data only visible if profile is saved
   const filteredData = useMemo(() => {
     if (!user) return [];
-    
-    // Bloqueio preventivo: Se o perfil não tem nome salvo, não mostra dados sensíveis
     if (!profile.name || profile.name.trim() === "") return [];
-
     if (user.role === 'gestor') return data;
-    
-    // Usa o nome salvo no PERFIL para filtrar, garantindo sincronia com o que foi configurado
     const profileName = profile.name.toUpperCase().trim();
     return data.filter(row => {
       const respName = (row['RESP.'] || '').toUpperCase().trim();
@@ -107,13 +102,13 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Acesso Bloqueado</h2>
             <p className="text-slate-500 max-w-sm mt-2 font-medium">
-              Por segurança, seus dados de Forecast serão exibidos apenas após você configurar e salvar seu <strong>Nome Completo</strong> nas configurações.
+              Configure seu perfil para liberar os dados.
             </p>
             <button 
               onClick={() => setActiveTab(Tab.Settings)}
               className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all active:scale-95"
             >
-              CONFIGURAR PERFIL AGORA
+              CONFIGURAR AGORA
             </button>
           </div>
         ) : (
@@ -137,6 +132,7 @@ const App: React.FC = () => {
                 onFilterByCompany={() => setActiveTab(Tab.Forecast)} 
               />
             )}
+            {activeTab === Tab.Diary && <DiaryTab data={filteredData} />}
             {activeTab === Tab.Settings && <SettingsTab profile={profile} setProfile={setProfile} user={user} />}
           </>
         )}

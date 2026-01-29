@@ -11,8 +11,7 @@ import {
   LogOut,
   Bell,
   AlertTriangle,
-  Info,
-  UserCircle
+  BookText
 } from 'lucide-react';
 import { Tab, User, Notification, SalesPersonProfile } from '../types';
 
@@ -35,12 +34,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: Tab.Dashboard, label: 'Dashboard', icon: LayoutDashboard },
     { id: Tab.Goals, label: 'Metas', icon: Target },
     { id: Tab.Companies, label: 'Empresas', icon: Building2 },
+    { id: Tab.Diary, label: 'Diário', icon: BookText },
     { id: Tab.Settings, label: 'Configurações', icon: Settings },
   ];
 
-  const displayName = profile.name || "";
-  const displayEmail = profile.email || "";
-  const isProfileConfigured = !!profile.name;
+  const isProfileConfigured = !!profile.name && profile.name.trim() !== "";
+  const displayName = isProfileConfigured ? profile.name : "Configurar Perfil";
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
@@ -53,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           </button>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -78,15 +77,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                 {profile.logo ? (
                   <img src={profile.logo} className="w-full h-full object-cover" alt="Logo" />
                 ) : (
-                  <span className="text-blue-400">{isProfileConfigured ? displayName.charAt(0) : '?'}</span>
+                  <span className={`${isProfileConfigured ? 'text-blue-400' : 'text-slate-600'}`}>
+                    {isProfileConfigured ? displayName.charAt(0) : '?'}
+                  </span>
                 )}
               </div>
               {isSidebarOpen && (
                 <div className="flex flex-col min-w-0">
-                  <span className={`text-sm font-semibold truncate ${!isProfileConfigured ? 'text-slate-500 italic' : 'text-white'}`}>
-                    {isProfileConfigured ? displayName : "Configurar Perfil"}
+                  <span className={`text-sm font-semibold truncate uppercase tracking-tight ${!isProfileConfigured ? 'text-slate-500 italic' : 'text-white'}`}>
+                    {displayName}
                   </span>
-                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+                  <span className="text-[9px] text-slate-600 font-black uppercase tracking-widest mt-0.5">
                     {isProfileConfigured ? user.role : 'Ação Necessária'}
                   </span>
                 </div>
@@ -108,8 +109,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           
           <div className="flex items-center gap-6">
             {!isProfileConfigured && (
-              <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[10px] font-black text-amber-600 uppercase tracking-widest animate-pulse">
-                <AlertTriangle size={12} /> Complete seu perfil para ver os dados
+              <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-amber-50 border border-amber-100 rounded-full text-[10px] font-black text-amber-600 uppercase tracking-widest animate-pulse shadow-sm">
+                <AlertTriangle size={12} /> Perfil incompleto
               </div>
             )}
             <div className="relative">
@@ -124,34 +125,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                   </span>
                 )}
               </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 mt-4 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                  <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Notificações</span>
-                    <button onClick={() => setShowNotifications(false)}><X size={14}/></button>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                    {notifications.length > 0 ? (
-                      notifications.map(n => (
-                        <div key={n.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-3">
-                           {n.type === 'warning' ? <AlertTriangle className="text-amber-500 shrink-0" size={18} /> : <Info className="text-blue-500 shrink-0" size={18} />}
-                           <div>
-                             <p className="text-sm font-bold text-slate-800">{n.title}</p>
-                             <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center text-slate-400 italic text-xs">Nenhum alerta pendente.</div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </header>
-
         <div className="p-8 pb-20">{children}</div>
       </main>
     </div>

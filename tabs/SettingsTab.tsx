@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-// Added AlertCircle to imports
 import { User as UserIcon, Shield, Bell, Key, Save, Upload, CreditCard, ExternalLink, CheckCircle2, Mail, Database, Download, AlertCircle } from 'lucide-react';
 import { SalesPersonProfile, User } from '../types';
 import { storageService } from '../services/storageService';
@@ -20,8 +19,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ profile, setProfile, user }) 
   const isManager = user.role === 'gestor';
 
   const save = () => {
+    if (!localProfile.name || localProfile.name.trim().length < 3) {
+      alert('Por favor, preencha seu nome completo antes de salvar.');
+      return;
+    }
     setProfile(localProfile);
-    alert('Perfil salvo com sucesso!');
+    storageService.saveProfile(localProfile);
+    alert('Perfil configurado com sucesso! Os dados do CRM agora estão liberados.');
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,24 +82,28 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ profile, setProfile, user }) 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        {/* Profile Sidebar */}
+        {/* Profile Sidebar Preview */}
         <div className="w-full md:w-72 space-y-4 shrink-0">
-           <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm text-center">
-              <div className="relative w-24 h-24 mx-auto mb-4 group">
-                <div className="w-full h-full rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border-2 border-slate-50">
+           <div className="p-8 bg-white border border-slate-200 rounded-[2rem] shadow-sm text-center">
+              <div className="relative w-24 h-24 mx-auto mb-6 group">
+                <div className="w-full h-full rounded-[1.5rem] bg-slate-50 flex items-center justify-center overflow-hidden border-2 border-slate-100 transition-all group-hover:border-blue-200">
                   {localProfile.logo ? (
                     <img src={localProfile.logo} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon size={40} className="text-slate-300" />
+                    <UserIcon size={40} className="text-slate-200" />
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-all opacity-0 group-hover:opacity-100 -translate-x-1">
+                <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-blue-700 transition-all opacity-0 group-hover:opacity-100 translate-x-1 translate-y-1">
                   <Upload size={14} />
                   <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                 </label>
               </div>
-              <h3 className="font-bold text-slate-800 truncate">{localProfile.name || user.name}</h3>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 truncate">{localProfile.email || user.email}</p>
+              <h3 className={`font-black text-lg truncate tracking-tight uppercase ${!localProfile.name ? 'text-slate-300 italic' : 'text-slate-800'}`}>
+                {localProfile.name || "Nome Pendente"}
+              </h3>
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 truncate ${!localProfile.email ? 'text-slate-300' : 'text-slate-400'}`}>
+                {localProfile.email || "E-mail Pendente"}
+              </p>
            </div>
 
            <nav className="space-y-1">
@@ -103,44 +111,51 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ profile, setProfile, user }) 
                <button 
                  key={item.id} 
                  onClick={() => setActiveSection(item.id)}
-                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                 className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl transition-all duration-300 ${
                    activeSection === item.id 
-                    ? 'bg-blue-50 text-blue-600 font-bold shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                    ? 'bg-slate-900 text-white font-bold shadow-xl shadow-slate-200' 
+                    : 'text-slate-500 hover:bg-white hover:text-slate-800 border border-transparent hover:border-slate-100'
                  }`}
                >
-                 <item.icon size={18} className={activeSection === item.id ? 'text-blue-600' : 'text-slate-400'} />
-                 <span className="text-sm">{item.label}</span>
+                 <item.icon size={18} />
+                 <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
                </button>
              ))}
            </nav>
         </div>
 
         {/* Content area */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+        <div className="flex-1 bg-white border border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden min-h-[550px] flex flex-col">
            {activeSection === 'personal' && (
-             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-               <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <UserIcon size={20} className="text-blue-500" />
-                    Informações Pessoais
-                  </h2>
+             <div className="p-10 space-y-10 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+               <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                      <UserIcon size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Informações Pessoais</h2>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Identificação do Vendedor no CRM</p>
+                    </div>
+                  </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome Completo</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nome Completo</label>
                       <input 
                         type="text" 
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        placeholder="Ex: João da Silva"
+                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-bold text-slate-800 placeholder:text-slate-300"
                         value={localProfile.name}
                         onChange={e => setLocalProfile({...localProfile, name: e.target.value})}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">E-mail Profissional</label>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">E-mail Profissional</label>
                       <input 
                         type="email" 
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        placeholder="vendedor@empresa.com.br"
+                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-bold text-slate-800 placeholder:text-slate-300"
                         value={localProfile.email}
                         onChange={e => setLocalProfile({...localProfile, email: e.target.value})}
                       />
@@ -148,93 +163,97 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ profile, setProfile, user }) 
                   </div>
                </div>
 
-               <div className="flex justify-end gap-3 pt-6 mt-auto">
+               <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                  <p className="text-xs text-blue-700 leading-relaxed font-medium">
+                    <strong>Nota:</strong> O nome preenchido aqui é o que será utilizado para filtrar as oportunidades no Forecast. Certifique-se de que ele corresponda ao nome que consta na coluna <strong>"RESP."</strong> do seu arquivo Excel.
+                  </p>
+               </div>
+
+               <div className="flex justify-end pt-8 mt-auto">
                   <button 
                     onClick={save}
-                    className="flex items-center gap-2 px-10 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-900/10 hover:bg-blue-700 transition-all active:scale-95"
+                    className="flex items-center gap-3 px-12 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 uppercase text-xs tracking-widest"
                   >
-                    <Save size={20} />
-                    Salvar Alterações
+                    <Save size={18} />
+                    Salvar Perfil Profissional
                   </button>
                </div>
              </div>
            )}
 
            {activeSection === 'sync' && (
-             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <Database size={20} className="text-blue-500" />
-                    Sincronização & Backup
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Utilize estas ferramentas para compartilhar os dados do CRM entre diferentes computadores ou para salvar cópias de segurança.
-                  </p>
+             <div className="p-10 space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Sincronização & Backup</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Gestão Local do Banco de Dados</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                      <div className="p-2 bg-blue-100 text-blue-600 rounded-lg w-fit">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2rem] space-y-4 hover:border-blue-200 transition-colors group">
+                      <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm w-fit group-hover:bg-blue-600 group-hover:text-white transition-all">
                         <Download size={24} />
                       </div>
-                      <h4 className="font-bold text-slate-800">Exportar Banco de Dados</h4>
-                      <p className="text-xs text-slate-500">Gera um arquivo .json com todas as oportunidades, metas e perfis configurados.</p>
+                      <h4 className="font-black text-slate-800 uppercase text-sm tracking-tight">Exportar Backup</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">Gera um arquivo .json criptografado com todas as oportunidades e metas.</p>
                       <button 
                         onClick={exportDatabase}
-                        className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors"
+                        className="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors"
                       >
-                        Baixar Backup
+                        Baixar Arquivo JSON
                       </button>
                    </div>
 
-                   <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                      <div className="p-2 bg-purple-100 text-purple-600 rounded-lg w-fit">
+                   <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2rem] space-y-4 hover:border-purple-200 transition-colors group">
+                      <div className="p-3 bg-white text-purple-600 rounded-2xl shadow-sm w-fit group-hover:bg-purple-600 group-hover:text-white transition-all">
                         <Upload size={24} />
                       </div>
-                      <h4 className="font-bold text-slate-800">Restaurar Banco de Dados</h4>
-                      <p className="text-xs text-slate-500">Substitui os dados locais atuais pelos dados contidos em um arquivo de backup.</p>
-                      <label className={`w-full flex items-center justify-center py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold transition-colors cursor-pointer ${!isManager ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}>
-                        {isManager ? 'Escolher Arquivo' : 'Apenas para Gestores'}
+                      <h4 className="font-black text-slate-800 uppercase text-sm tracking-tight">Restaurar Backup</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">Substitui os dados locais atuais pelos dados de um arquivo externo.</p>
+                      <label className={`w-full flex items-center justify-center py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer ${!isManager ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 active:scale-95'}`}>
+                        {isManager ? 'Selecionar Arquivo' : 'Acesso Restrito'}
                         {isManager && <input type="file" className="hidden" accept=".json" onChange={importDatabase} />}
                       </label>
                    </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3">
-                   {/* Fix: AlertCircle now imported from lucide-react */}
-                   <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                   <p className="text-xs text-amber-800">
-                     <strong>Atenção:</strong> Como este aplicativo roda localmente no navegador, os dados não são sincronizados automaticamente na nuvem. Você deve usar a função de exportação/importação para compartilhar as atualizações com outros computadores.
+                <div className="p-6 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-4">
+                   <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                   <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                     <strong>Segurança:</strong> Seus dados são armazenados exclusivamente no seu navegador. Caso limpe o cache ou troque de computador, você precisará importar seu arquivo de backup para recuperar as metas e configurações.
                    </p>
                 </div>
              </div>
            )}
 
            {activeSection === 'api' && (
-             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <Key size={20} className="text-blue-500" />
-                    Configurações de Inteligência Artificial
-                  </h2>
+             <div className="p-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Inteligência Artificial</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Motor Gemini PRO 2026</p>
                 </div>
-                <div className="p-6 bg-green-50 border border-green-100 rounded-2xl flex items-start gap-4">
-                  <CheckCircle2 size={24} className="text-green-600" />
+                <div className="p-8 bg-green-50 border border-green-100 rounded-[2rem] flex items-center gap-6">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+                    <CheckCircle2 size={32} />
+                  </div>
                   <div>
-                    <h4 className="font-bold text-green-800">Serviço Gemini Operacional</h4>
-                    <p className="text-sm text-green-700/80 mt-1">Sua conexão com a IA está pronta para processar oportunidades e gerar relatórios.</p>
+                    <h4 className="font-black text-green-800 uppercase text-sm tracking-tight">Status: Conectado</h4>
+                    <p className="text-xs text-green-700/80 mt-1 font-medium leading-relaxed">O sistema está pronto para realizar análises preditivas e planejamento de rotas.</p>
                   </div>
                 </div>
              </div>
            )}
 
            {activeSection === 'privacy' && (
-             <div className="p-8 space-y-4 animate-in fade-in duration-300">
-               <h3 className="font-bold text-slate-800">Segurança de Dados</h3>
-               <p className="text-sm text-slate-500">
-                 Seus dados de forecast são processados apenas localmente e via prompts anonimizados para a API do Google Gemini. 
-                 Nenhuma informação é armazenada em servidores externos permanentes por este aplicativo.
-               </p>
+             <div className="p-10 space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Privacidade</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Proteção de Dados do Forecast</p>
+                </div>
+                <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2rem] space-y-4">
+                  <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                    As informações do seu pipeline são processadas localmente. Ao utilizar as funções de IA, os dados são enviados de forma efêmera para os servidores do Google (Gemini) via conexão criptografada e não são utilizados para treinamento de modelos públicos.
+                  </p>
+                </div>
              </div>
            )}
         </div>
