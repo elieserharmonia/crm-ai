@@ -16,7 +16,9 @@ import {
   Globe,
   Save,
   CheckCircle2,
-  CloudCheck
+  CloudCheck,
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { ForecastRow, DiaryEntry } from '../types';
 import { storageService } from '../services/storageService';
@@ -56,23 +58,8 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   const handleSaveLink = () => {
     if (!selectedCompany) return;
 
-    const now = new Date().toISOString();
-    const newEntries = [...diaryEntries];
-    const index = newEntries.findIndex(e => e.companyName === selectedCompany);
-    
-    const updatedEntry: DiaryEntry = {
-      id: index >= 0 ? newEntries[index].id : Date.now().toString(),
-      companyName: selectedCompany,
-      content: "[Protocolo Office ms-word:ofe|u|]",
-      lastUpdate: now,
-      diaryLink: linkInput
-    };
-
-    if (index >= 0) newEntries[index] = updatedEntry;
-    else newEntries.push(updatedEntry);
-
-    setDiaryEntries(newEntries);
-    storageService.saveDiaryEntries(newEntries);
+    storageService.saveDiaryLink(selectedCompany, linkInput);
+    setDiaryEntries(storageService.getDiaryEntries());
     setIsEditingLink(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
@@ -81,8 +68,6 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   const handleOpenDiary = () => {
     const entry = diaryEntries.find(e => e.companyName === selectedCompany);
     if (entry?.diaryLink) {
-      // Implementação do Protocolo do Office: ms-word:ofe|u|URL
-      // Isso força o Windows a abrir o Word Desktop diretamente com o arquivo da nuvem
       const officeUrl = `ms-word:ofe|u|${entry.diaryLink}`;
       
       try {
@@ -97,7 +82,6 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
         storageService.saveDiaryEntries(newEntries);
       } catch (e) {
         console.error("Falha ao abrir o Word Desktop:", e);
-        // Fallback para Word Online caso o protocolo falhe
         window.open(entry.diaryLink, '_blank', 'noopener,noreferrer');
       }
     }
@@ -172,9 +156,11 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                   <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight truncate max-w-[300px]">
                     {selectedCompany}
                   </h2>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-full border border-blue-100">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                    <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest">OneDrive Sincronizado</span>
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${getEntryForCompany(selectedCompany)?.diaryLink ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${getEntryForCompany(selectedCompany)?.diaryLink ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                    <span className={`text-[8px] font-black uppercase tracking-widest ${getEntryForCompany(selectedCompany)?.diaryLink ? 'text-blue-700' : 'text-amber-700'}`}>
+                      {getEntryForCompany(selectedCompany)?.diaryLink ? 'OneDrive Pronto' : 'Ação Necessária'}
+                    </span>
                   </div>
                 </div>
                 <div className="p-2 bg-slate-50 text-slate-400 rounded-xl border border-slate-100">
@@ -182,11 +168,11 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                 </div>
               </div>
 
-              {/* 2. Barra de Status Horizontal (Design Compacto) */}
+              {/* 2. Barra de Status Horizontal */}
               <div className="flex items-center gap-8 py-4 px-6 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-2">
                   <Clock size={14} className="text-slate-400" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Última Edição:</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Acesso:</span>
                   <span className="text-[10px] font-bold text-slate-700">
                     {getEntryForCompany(selectedCompany)?.lastUpdate 
                       ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -195,13 +181,15 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                 </div>
                 <div className="h-4 w-[1px] bg-slate-200" />
                 <div className="flex items-center gap-2">
-                  <CloudCheck size={14} className="text-green-500" />
+                  <CloudCheck size={14} className={getEntryForCompany(selectedCompany)?.diaryLink ? 'text-green-500' : 'text-slate-300'} />
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status:</span>
-                  <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Sincronizado</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${getEntryForCompany(selectedCompany)?.diaryLink ? 'text-green-600' : 'text-slate-400'}`}>
+                    {getEntryForCompany(selectedCompany)?.diaryLink ? 'Sincronizado' : 'Não Configurado'}
+                  </span>
                 </div>
               </div>
 
-              {/* 3. Botão de Ação Primário Destaque (Compacto) */}
+              {/* 3. Botão de Ação Primário Destaque */}
               <button 
                 onClick={handleOpenDiary}
                 disabled={!linkInput || isEditingLink}
@@ -211,15 +199,15 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                     : 'bg-slate-900 text-white hover:bg-blue-600 hover:-translate-y-1'
                 }`}
               >
-                <ExternalLink size={18} />
-                Abrir Diário no Word
+                {!linkInput ? <AlertTriangle size={18} /> : <ExternalLink size={18} />}
+                {!linkInput ? 'Link não configurado' : 'Abrir Diário no Word'}
               </button>
 
               {/* Input de Link Ocultável */}
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <LinkIcon size={12} /> Configuração de Link OneDrive
+                    <Settings size={12} /> Configuração do Cliente
                   </label>
                   {!isEditingLink && (
                     <button 
@@ -248,31 +236,35 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-xl truncate">
-                    <Globe size={14} className="text-blue-500 shrink-0" />
-                    <span className="text-[10px] text-slate-400 truncate font-mono">{linkInput}</span>
+                    <Globe size={14} className={linkInput ? 'text-blue-500' : 'text-slate-300'} />
+                    <span className="text-[10px] text-slate-400 truncate font-mono">
+                      {linkInput || 'Nenhum link configurado para este cliente.'}
+                    </span>
                   </div>
                 )}
                 
                 {saveSuccess && (
                   <p className="text-[10px] font-bold text-green-600 flex items-center gap-1 animate-in fade-in">
-                    <CheckCircle2 size={12} /> Link salvo! Protocolo ms-word ativo.
+                    <CheckCircle2 size={12} /> Link salvo no cadastro do cliente!
                   </p>
                 )}
               </div>
 
-              <div className="p-4 bg-blue-50/50 rounded-xl flex items-start gap-3 border border-blue-100/30">
-                 <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                 <p className="text-[9px] text-blue-700 font-bold leading-relaxed uppercase tracking-tight">
-                   O comando <strong>ms-word:ofe|u|</strong> aciona o Word instalado no seu computador para edição direta na nuvem.
-                 </p>
-              </div>
+              {!linkInput && (
+                <div className="p-4 bg-amber-50 rounded-xl flex items-start gap-3 border border-amber-100">
+                   <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                   <p className="text-[9px] text-amber-700 font-bold leading-relaxed uppercase tracking-tight">
+                     <strong>Atenção:</strong> Adicione o link do OneDrive acima ou no cadastro da oportunidade para habilitar o acesso direto ao Word Desktop.
+                   </p>
+                </div>
+              )}
             </div>
 
-            {/* 4. Rodapé Técnico Minimalista (Oculto sob Tooltip/Hover) */}
+            {/* 4. Rodapé Técnico Minimalista */}
             <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2 group">
               <Info size={10} className="text-slate-200 group-hover:text-blue-400 transition-colors" />
               <p className="text-[7px] font-mono text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-xs">
-                Protocolo: ms-word:ofe|u|{linkInput}
+                Protocolo Ativo: ms-word:ofe|u|{linkInput || 'null'}
               </p>
             </div>
 

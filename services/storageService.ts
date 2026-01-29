@@ -36,5 +36,27 @@ export const storageService = {
   },
   saveDiaryEntries: (entries: DiaryEntry[]) => {
     localStorage.setItem(KEYS.DIARY, JSON.stringify(entries));
+  },
+  getDiaryLink: (companyName: string): string => {
+    const entries = storageService.getDiaryEntries();
+    return entries.find(e => e.companyName === companyName)?.diaryLink || '';
+  },
+  saveDiaryLink: (companyName: string, link: string) => {
+    const entries = storageService.getDiaryEntries();
+    const index = entries.findIndex(e => e.companyName === companyName);
+    const now = new Date().toISOString();
+    
+    const updatedEntry: DiaryEntry = {
+      id: index >= 0 ? entries[index].id : Date.now().toString(),
+      companyName,
+      content: "[Protocolo Office]",
+      lastUpdate: now,
+      diaryLink: link
+    };
+
+    if (index >= 0) entries[index] = updatedEntry;
+    else entries.push(updatedEntry);
+
+    storageService.saveDiaryEntries(entries);
   }
 };

@@ -14,9 +14,11 @@ import {
   Eye,
   AlertCircle,
   Plus,
-  Save
+  Save,
+  Link as LinkIcon
 } from 'lucide-react';
 import { ForecastRow, User } from '../types';
+import { storageService } from '../services/storageService';
 
 interface ForecastTabProps {
   data: ForecastRow[];
@@ -38,20 +40,16 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   
-  // Novo estado para cadastro manual
-  const [manualRow, setManualRow] = useState<Partial<ForecastRow>>({
+  const [manualRow, setManualRow] = useState<Partial<ForecastRow> & { diaryLink?: string }>({
     CUSTOMER: '',
     SUPPLIER: '',
     DESCRIPTION: '',
     AMOUNT: 0,
     UF: 'SP',
     Confidence: 10,
-    'RESP.': user.name.toUpperCase()
+    'RESP.': user.name.toUpperCase(),
+    diaryLink: ''
   });
-
-  const addLog = (message: string, type: 'info' | 'error' | 'success' | 'debug' = 'info') => {
-    setDebugLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), message, type }, ...prev]);
-  };
 
   const expandMergedCells = (ws: XLSX.WorkSheet) => {
     if (!ws['!merges']) return;
@@ -144,6 +142,12 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
       alert("Por favor, preencha os campos obrigatórios: Cliente, Descrição e Valor.");
       return;
     }
+    
+    // Salvar link do diário se fornecido
+    if (manualRow.diaryLink) {
+      storageService.saveDiaryLink(manualRow.CUSTOMER, manualRow.diaryLink);
+    }
+
     const newEntry: ForecastRow = {
       id: `manual-${Date.now()}`,
       'Unnamed: 0': data.length + 1,
@@ -162,7 +166,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
     setData([newEntry, ...data]);
     setIsAddingManual(false);
     setManualRow({
-      CUSTOMER: '', SUPPLIER: '', DESCRIPTION: '', AMOUNT: 0, UF: 'SP', Confidence: 10, 'RESP.': user.name.toUpperCase()
+      CUSTOMER: '', SUPPLIER: '', DESCRIPTION: '', AMOUNT: 0, UF: 'SP', Confidence: 10, 'RESP.': user.name.toUpperCase(), diaryLink: ''
     });
   };
 
@@ -299,7 +303,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Descrição do Negócio (Obrigatório)</label>
                     <textarea 
-                       className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-32 outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                       className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-24 outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                        placeholder="Descreva os itens ou escopo da proposta..."
                        value={manualRow.DESCRIPTION}
                        onChange={e => setManualRow({...manualRow, DESCRIPTION: e.target.value})}
@@ -338,6 +342,22 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                        </select>
                     </div>
                  </div>
+
+                 {/* Novo Campo: Link do Diário */}
+                 <div className="space-y-2 p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
+                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest px-1 flex items-center gap-2">
+                      <LinkIcon size={12} /> Link do Diário (OneDrive Web)
+                    </label>
+                    <input 
+                        className="w-full p-4 bg-white border border-blue-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-xs font-mono"
+                        placeholder="Cole o link do OneDrive aqui para acesso rápido no Word..."
+                        value={manualRow.diaryLink}
+                        onChange={e => setManualRow({...manualRow, diaryLink: e.target.value})}
+                    />
+                    <p className="text-[9px] text-blue-400 font-bold uppercase tracking-tight pl-1 italic">
+                      Este link será associado a este cliente para o protocolo ms-word.
+                    </p>
+                 </div>
               </div>
 
               <div className="p-10 border-t bg-slate-50/50 flex justify-end gap-6">
@@ -353,7 +373,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
         </div>
       )}
 
-      {/* Modal de Importação (Mantido original) */}
+      {/* Modal de Importação */}
       {importPreview && (
         <div className="fixed inset-0 bg-slate-900/95 z-[400] flex items-center justify-center p-6 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">

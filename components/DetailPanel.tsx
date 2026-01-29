@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   FileText, 
@@ -8,9 +8,13 @@ import {
   Check,
   User as UserIcon,
   DollarSign,
-  AlertTriangle
+  AlertTriangle,
+  Link as LinkIcon,
+  Globe,
+  Save
 } from 'lucide-react';
 import { ForecastRow, SalesPersonProfile, User, Contact } from '../types';
+import { storageService } from '../services/storageService';
 
 interface DetailPanelProps {
   row: ForecastRow | null;
@@ -22,6 +26,15 @@ interface DetailPanelProps {
 }
 
 const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpdate, user, contacts }) => {
+  const [diaryLink, setDiaryLink] = useState('');
+  const [saveStatus, setSaveStatus] = useState(false);
+
+  useEffect(() => {
+    if (row) {
+      setDiaryLink(storageService.getDiaryLink(row.CUSTOMER));
+    }
+  }, [row]);
+
   if (!row) return null;
 
   const isManager = user.role === 'gestor';
@@ -32,6 +45,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
   const handleChange = (field: keyof ForecastRow, value: any) => {
     if (!canEdit) return;
     onUpdate({ ...row, [field]: value });
+  };
+
+  const handleSaveDiaryLink = () => {
+    storageService.saveDiaryLink(row.CUSTOMER, diaryLink);
+    setSaveStatus(true);
+    setTimeout(() => setSaveStatus(false), 2000);
   };
 
   return (
@@ -56,6 +75,37 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
       <div className="flex-1 overflow-auto p-8 space-y-10 custom-scrollbar pb-32">
         <div className="space-y-10 animate-in fade-in duration-300">
+          
+          {/* Nova Seção: Link do Diário (Cadastro) */}
+          <section className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                <LinkIcon size={14}/> Link do Diário OneDrive
+              </h3>
+              {saveStatus && <span className="text-[9px] font-bold text-green-600 uppercase animate-in fade-in">Link Atualizado!</span>}
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={16} />
+                <input 
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-blue-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-[10px] text-slate-600"
+                  placeholder="URL de compartilhamento do OneDrive..."
+                  value={diaryLink}
+                  onChange={e => setDiaryLink(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={handleSaveDiaryLink}
+                className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-md active:scale-95"
+              >
+                <Save size={18} />
+              </button>
+            </div>
+            <p className="text-[9px] text-blue-400 font-bold uppercase tracking-tight italic pl-1">
+              Configure aqui para habilitar o botão "Abrir Diário no Word" para esta empresa.
+            </p>
+          </section>
+
           <section className="space-y-4">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <FileText size={14}/> DESCRIPTION (EXACT SOURCE)
