@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Building,
   FileCheck,
-  Plus
+  Plus,
+  Palette
 } from 'lucide-react';
 import { ForecastRow, SalesPersonProfile, User, Contact, PurchaseOrder } from '../types';
 import { storageService } from '../services/storageService';
@@ -31,6 +32,15 @@ interface DetailPanelProps {
   user: User;
   contacts: Contact[];
 }
+
+const COLORS_PALETTE = [
+  { name: 'Nenhuma', class: '', ring: 'ring-slate-200', bg: 'bg-white' },
+  { name: 'Info', class: 'bg-blue-50', ring: 'ring-blue-400', bg: 'bg-blue-400' },
+  { name: 'Sucesso', class: 'bg-green-50', ring: 'ring-green-400', bg: 'bg-green-400' },
+  { name: 'Alerta', class: 'bg-yellow-50', ring: 'ring-yellow-400', bg: 'bg-yellow-400' },
+  { name: 'Urgente', class: 'bg-red-50', ring: 'ring-red-400', bg: 'bg-red-400' },
+  { name: 'Estratégico', class: 'bg-purple-50', ring: 'ring-purple-400', bg: 'bg-purple-400' },
+];
 
 const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpdate, user, contacts }) => {
   const [localRow, setLocalRow] = useState<ForecastRow | null>(null);
@@ -134,6 +144,32 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
 
       <div className="flex-1 overflow-auto p-8 space-y-10 custom-scrollbar pb-32">
         
+        {/* Seletor de Cor (Pintar Linha) */}
+        <div className="p-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Palette size={16} className="text-slate-400" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tag Visual de Status (Cores)</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {COLORS_PALETTE.map((c) => (
+              <button
+                key={c.name}
+                onClick={() => handleChange('color', c.class)}
+                className={`w-10 h-10 rounded-full ${c.bg} border-2 border-white shadow-sm transition-all relative ${
+                  localRow.color === c.class ? `ring-4 ${c.ring}` : 'hover:scale-110'
+                }`}
+                title={c.name}
+              >
+                {localRow.color === c.class && (
+                  <div className="absolute inset-0 flex items-center justify-center text-white">
+                    <Check size={16} strokeWidth={4} className={c.class === '' ? 'text-slate-900' : ''} />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Botão Principal de Conversão para Pedido */}
         {!isGeneratingPO ? (
           <button 

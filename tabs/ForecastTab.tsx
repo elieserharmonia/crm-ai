@@ -94,7 +94,8 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
       JAN: '', FEV: '', MAR: '', '2026': '',
       'FOLLOW-UP': '',
       'CONTATOS': '',
-      oweInfoToClient: false
+      oweInfoToClient: false,
+      color: ''
     };
     setData([newEntry, ...data]);
     setIsAddingManual(false);
@@ -159,9 +160,13 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredData.map((row) => (
-                  <tr key={row.id} className="cursor-pointer hover:bg-slate-50 transition-all group border-l-4 border-transparent hover:border-blue-500" onClick={() => onRowSelect(row)}>
+                  <tr 
+                    key={row.id} 
+                    className={`cursor-pointer transition-all group border-l-4 border-transparent hover:border-blue-500 ${row.color || 'hover:bg-slate-50'}`} 
+                    onClick={() => onRowSelect(row)}
+                  >
                     <td className="p-5 text-center">
-                      <div className="p-2 bg-slate-100 rounded-lg text-slate-400 group-hover:text-blue-600 transition-all shadow-sm"><Eye size={14}/></div>
+                      <div className="p-2 bg-white/50 border border-slate-100 rounded-lg text-slate-400 group-hover:text-blue-600 transition-all shadow-sm"><Eye size={14}/></div>
                     </td>
                     <td className="p-5 font-bold text-slate-500 whitespace-nowrap">{row['RESP.']}</td>
                     <td className="p-5 font-black text-slate-900 uppercase whitespace-nowrap">{row.CUSTOMER}</td>
@@ -213,15 +218,15 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                     <div 
                       key={item.id} 
                       onClick={() => onRowSelect(item)}
-                      className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition-all cursor-pointer group"
+                      className={`${item.color || 'bg-white'} p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition-all cursor-pointer group`}
                     >
                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight mb-1 group-hover:text-blue-600">{item.CUSTOMER}</h4>
                       <p className="text-[10px] text-slate-500 font-bold uppercase truncate mb-3">{item.DESCRIPTION}</p>
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                         <span className="text-[11px] font-mono font-black text-slate-900">
                           {item.AMOUNT.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}
                         </span>
-                        <div className="px-2 py-1 bg-slate-50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        <div className="px-2 py-1 bg-white/50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest border border-slate-100">
                           {item['RESP.']}
                         </div>
                       </div>

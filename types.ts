@@ -46,6 +46,7 @@ export interface ForecastRow {
   lastUpdate?: string;
   notes?: string;
   budgetCode?: string; // Número do Orçamento
+  color?: string;      // Classe de cor do Tailwind (ex: bg-blue-50)
 }
 
 export interface PurchaseOrder {
