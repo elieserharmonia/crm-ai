@@ -51,12 +51,12 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
   const [supplierGoals, setSupplierGoals] = useState<Array<{ supplier: string; v2025: number; v2026: number }>>([]);
   
   // Stats do Realizado (POs)
-  const pos = storageService.getPOs();
+  const pos = storageService.getPOs() || [];
 
   // Iniciais para o Budget ID
   const userInitials = useMemo(() => {
     if (!profile.name) return '??';
-    return profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    return profile.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().substring(0, 2);
   }, [profile.name]);
 
   const budgetId = `BUDGET 2026_${userInitials}`;
@@ -64,27 +64,27 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
   // Agrupamento de Metas por Cliente
   const groupedGoals = useMemo(() => {
     const map = new Map<string, Goal[]>();
-    goals.forEach(goal => {
+    (goals || []).forEach(goal => {
       const customer = goal.customer || 'Global';
       if (!map.has(customer)) map.set(customer, []);
       map.get(customer)!.push(goal);
     });
     return Array.from(map.entries()).sort((a, b) => {
-      const totalA = a[1].reduce((sum, g) => sum + g.value, 0);
-      const totalB = b[1].reduce((sum, g) => sum + g.value, 0);
+      const totalA = a[1].reduce((sum, g) => sum + (g.value || 0), 0);
+      const totalB = b[1].reduce((sum, g) => sum + (g.value || 0), 0);
       return totalB - totalA; // Ordena por maior budget
     });
   }, [goals]);
 
   // Totais do Dashboard
   const stats = useMemo(() => {
-    const totalMeta = goals.reduce((acc, g) => acc + g.value, 0);
-    const totalMeta2025 = goals.reduce((acc, g) => acc + (g.value2025 || 0), 0);
-    const totalRealizado = pos.reduce((acc, p) => acc + p.amount, 0);
-    const atingimento = totalMeta > 0 ? (totalRealizado / totalMeta) * 100 : 0;
+    const totalMeta = (goals || []).reduce((acc, g) => acc + (g.value || 0), 0);
+    const totalMeta2025 = (goals || []).reduce((acc, g) => acc + (g.value2025 || 0), 0);
+    const totalRealized = pos.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const atingimento = totalMeta > 0 ? (totalRealized / totalMeta) * 100 : 0;
     const crescimento = totalMeta2025 > 0 ? ((totalMeta - totalMeta2025) / totalMeta2025) * 100 : 0;
 
-    return { totalMeta, totalRealizado, atingimento, totalMeta2025, crescimento };
+    return { totalMeta, totalRealized, atingimento, totalMeta2025, crescimento };
   }, [goals, pos]);
 
   // Dados para o Gráfico YoY (Top 5 Clientes)
@@ -92,7 +92,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
     return groupedGoals.slice(0, 5).map(([name, items]) => ({
       name: name.substring(0, 15),
       '2025': items.reduce((acc, g) => acc + (g.value2025 || 0), 0),
-      '2026': items.reduce((acc, g) => acc + g.value, 0)
+      '2026': items.reduce((acc, g) => acc + (g.value || 0), 0)
     }));
   }, [groupedGoals]);
 
@@ -136,7 +136,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
   const saveManualGoal = () => {
     if (!selectedCustomer || supplierGoals.length === 0) return;
     
-    const otherGoals = goals.filter(g => g.customer !== selectedCustomer);
+    const otherGoals = (goals || []).filter(g => g.customer !== selectedCustomer);
     const newItems: Goal[] = supplierGoals.map((sg, i) => ({
       id: `manual-${Date.now()}-${i}`,
       customer: selectedCustomer,
@@ -186,11 +186,11 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Target Total 2026</p>
            <div className="flex items-center justify-between">
               <p className="text-2xl font-black font-mono text-slate-900">
-                R$ {stats.totalMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                R$ {(stats.totalMeta || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
               </p>
               <div className={`flex items-center gap-1 text-[10px] font-black ${stats.crescimento >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {stats.crescimento >= 0 ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
-                {Math.abs(stats.crescimento).toFixed(1)}% YoY
+                {Math.abs(stats.crescimento || 0).toFixed(1)}% YoY
               </div>
            </div>
            <div className="mt-4 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -201,29 +201,29 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
         <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl border-4 border-white">
            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Realizado (Vendas PO)</p>
            <p className="text-2xl font-black font-mono">
-             R$ {stats.totalRealized.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+             R$ {(stats.totalRealized || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
            </p>
            <div className="mt-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: `${Math.min(stats.atingimento, 100)}%` }} />
+              <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: `${Math.min(stats.atingimento || 0, 100)}%` }} />
            </div>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col justify-between">
            <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Atingimento Geral</p>
-              <p className="text-4xl font-black tracking-tighter text-slate-900">{stats.atingimento.toFixed(1)}%</p>
+              <p className="text-4xl font-black tracking-tighter text-slate-900">{(stats.atingimento || 0).toFixed(1)}%</p>
            </div>
-           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Baseado em {pos.length} pedidos faturados</p>
+           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Baseado em {(pos || []).length} pedidos faturados</p>
         </div>
 
         <div className="bg-blue-50 p-8 rounded-[2.5rem] border border-blue-100 shadow-sm flex flex-col justify-between">
            <div>
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Growth Forecast (YoY)</p>
               <p className="text-4xl font-black tracking-tighter text-blue-700">
-                {stats.crescimento >= 0 ? '+' : ''}{stats.crescimento.toFixed(1)}%
+                {stats.crescimento >= 0 ? '+' : ''}{(stats.crescimento || 0).toFixed(1)}%
               </p>
            </div>
-           <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest italic">Comparado a R$ {stats.totalMeta2025.toLocaleString()}</p>
+           <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest italic">Comparado a R$ {(stats.totalMeta2025 || 0).toLocaleString()}</p>
         </div>
       </div>
 
@@ -264,10 +264,8 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
           </div>
 
           {groupedGoals.map(([customer, items]) => {
-            const customerMeta = items.reduce((acc, g) => acc + g.value, 0);
-            const customerReal = items.reduce((acc, g) => {
-              return acc + pos.filter(p => p.customer.toLowerCase() === customer.toLowerCase()).reduce((sum, p) => sum + p.amount, 0);
-            }, 0);
+            const customerMeta = items.reduce((acc, g) => acc + (g.value || 0), 0);
+            const customerReal = pos.filter(p => p.customer.toLowerCase() === customer.toLowerCase()).reduce((sum, p) => sum + (p.amount || 0), 0);
             const isExpanded = expandedCustomers.has(customer);
             const atingimento = customerMeta > 0 ? (customerReal / customerMeta) * 100 : 0;
 
@@ -296,7 +294,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
                     <div className="text-right hidden sm:block">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Target 2026</p>
                       <p className="text-xl font-mono font-black text-slate-900">
-                        R$ {customerMeta.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        R$ {(customerMeta || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </p>
                     </div>
                     <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
@@ -312,7 +310,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
                         const goalReal = pos.filter(p => 
                           p.customer.toLowerCase() === customer.toLowerCase() && 
                           p.supplier.toLowerCase() === goal.supplier.toLowerCase()
-                        ).reduce((acc, curr) => acc + curr.amount, 0);
+                        ).reduce((acc, curr) => acc + (curr.amount || 0), 0);
                         const goalPct = goal.value > 0 ? (goalReal / goal.value) * 100 : 0;
 
                         return (
@@ -321,11 +319,11 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
                                 <div className="p-2 bg-white rounded-xl text-slate-400 border border-slate-100"><Briefcase size={16}/></div>
                                 <div>
                                    <p className="text-[11px] font-black text-slate-800 uppercase leading-none mb-1">{goal.supplier}</p>
-                                   <p className="text-[9px] font-bold text-slate-400 uppercase">YoY: R$ {(goal.value2025 || 0).toLocaleString()} → R$ {goal.value.toLocaleString()}</p>
+                                   <p className="text-[9px] font-bold text-slate-400 uppercase">YoY: R$ {(goal.value2025 || 0).toLocaleString()} → R$ {(goal.value || 0).toLocaleString()}</p>
                                 </div>
                              </div>
                              <div className="text-right">
-                                <p className="text-[11px] font-mono font-black text-slate-900">R$ {goalReal.toLocaleString()}</p>
+                                <p className="text-[11px] font-mono font-black text-slate-900">R$ {(goalReal || 0).toLocaleString()}</p>
                                 <div className="flex items-center gap-1 justify-end mt-0.5">
                                    <span className={`text-[8px] font-black uppercase ${goalPct >= 100 ? 'text-green-600' : 'text-blue-600'}`}>
                                       {goalPct.toFixed(0)}% REALIZADO
@@ -339,7 +337,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ data, goals, setGoals, onGoalClick,
                     <div className="mt-6 pt-6 border-t border-slate-100 flex justify-end gap-3">
                        <button 
                         onClick={() => {
-                          const updated = goals.filter(g => g.customer !== customer);
+                          const updated = (goals || []).filter(g => g.customer !== customer);
                           setGoals(updated);
                         }}
                         className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-colors"
