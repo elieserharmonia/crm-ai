@@ -21,7 +21,7 @@ import {
   Plus,
   Palette
 } from 'lucide-react';
-import { ForecastRow, SalesPersonProfile, User, Contact, PurchaseOrder } from '../types';
+import { ForecastRow, SalesPersonProfile, User, Contact, PurchaseOrder, CONFIDENCE_MAPPING } from '../types';
 import { storageService } from '../services/storageService';
 
 interface DetailPanelProps {
@@ -299,7 +299,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                 onChange={e => handleChange('Confidence', parseInt(e.target.value))}
               >
                 {[0, 10, 30, 50, 80, 90, 100].map(v => (
-                  <option key={v} value={v}>{v}% - {v === 100 ? 'PEDIDO CONFIRMADO' : 'EM NEGOCIAÇÃO'}</option>
+                  <option key={v} value={v}>
+                    {v}% - {CONFIDENCE_MAPPING[v as keyof typeof CONFIDENCE_MAPPING]}
+                  </option>
                 ))}
               </select>
             </section>

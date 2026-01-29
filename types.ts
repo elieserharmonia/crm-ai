@@ -71,9 +71,10 @@ export interface Notification {
 
 export interface Goal {
   id: string;
-  customer?: string;
-  supplier?: string;
-  value: number;
+  customer: string;
+  supplier: string;
+  value: number;       // Valor 2026 (Meta Atual)
+  value2025?: number;  // Valor 2025 (Comparativo YoY)
 }
 
 export interface SalesPersonProfile {
@@ -97,10 +98,10 @@ export enum Tab {
 
 export const CONFIDENCE_MAPPING = {
   0: 'Oportunidade Perdida',
-  10: 'Sonho: Contato inicial realizado',
-  30: 'Proposta solicitada (cotação)',
-  50: 'Cotação enviada + indicação (Negociação)',
-  80: 'RFQ enviada ao departamento do fornecedor',
-  90: 'Pedido (PO) em mãos',
-  100: 'Fechado (Ganho)'
+  10: 'Oportunidade observada',
+  30: 'Proposta enviada',
+  50: 'Indicação de compra',
+  80: 'Solicitação de compra',
+  90: 'Pedido recebido',
+  100: 'Material entregue'
 };
