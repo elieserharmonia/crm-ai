@@ -29,7 +29,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   const [isOpening, setIsOpening] = useState(false);
   const [systemError, setSystemError] = useState(false);
 
-  // Carregar metadados salvos (Datas de última edição)
+  // Carregar metadados salvos
   useEffect(() => {
     setDiaryEntries(storageService.getDiaryEntries());
   }, []);
@@ -46,13 +46,12 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     setIsOpening(true);
     setSystemError(false);
     
-    // 1. Definição do Caminho Absoluto (Exatamente como solicitado)
-    // Usando escape de barras para compatibilidade Windows no JS
+    // Caminho Fixo Conforme Solicitado
     const rootPath = "C:\\Users\\Elieser.Fernandes\\OneDrive - Sinuelo\\CRM-AI PRO";
     const fileName = `Diario_${company.replace(/\s+/g, '_')}.docx`;
     const fullPath = `${rootPath}\\${fileName}`;
 
-    // 2. Atualização Instantânea da Data de Edição
+    // Atualização de Metadados
     const now = new Date().toISOString();
     const newEntries = [...diaryEntries];
     const index = newEntries.findIndex(e => e.companyName === company);
@@ -60,7 +59,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     const updatedEntry: DiaryEntry = {
       id: index >= 0 ? newEntries[index].id : Date.now().toString(),
       companyName: company,
-      content: "[Arquivo Gerenciado no Microsoft Word Desktop]",
+      content: "[Gerenciado no Microsoft Word Desktop]",
       lastUpdate: now
     };
 
@@ -70,10 +69,8 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     setDiaryEntries(newEntries);
     storageService.saveDiaryEntries(newEntries);
 
-    // 3. Execução do Gatilho de Sistema
     try {
-      // Nota: Em ambiente Electron/Python usamos os.startfile(fullPath)
-      // Aqui, disparamos a intenção de download/open com o nome exato do arquivo único
+      // Simulação de Gatilho de Sistema
       const docxBlob = new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       const url = URL.createObjectURL(docxBlob);
       const link = document.createElement('a');
@@ -81,8 +78,6 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
       link.download = fileName;
       link.click();
       URL.revokeObjectURL(url);
-
-      console.log(`Comando Enviado para o Sistema: Abrindo ${fullPath}`);
     } catch (err) {
       setSystemError(true);
     } finally {
@@ -96,7 +91,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
 
   return (
     <div className="flex h-[calc(100vh-180px)] -m-8 overflow-hidden bg-slate-50">
-      {/* Lista Lateral de Clientes */}
+      {/* Sidebar de Clientes */}
       <aside className="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pastas Sincronizadas</h2>
@@ -147,98 +142,99 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
         </div>
       </aside>
 
-      {/* Painel Central: Controle de Documento */}
+      {/* Main Dashboard Panel */}
       <main className="flex-1 bg-slate-100/50 flex flex-col items-center justify-center p-12 overflow-y-auto">
         {selectedCompany ? (
-          <div className="w-full max-w-xl bg-white rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-500">
-            {/* Status da Nuvem */}
-            <div className="px-10 py-4 bg-slate-900 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                <span className="text-[9px] font-black text-white uppercase tracking-widest">OneDrive Sincronizado: Sinuelo</span>
+          <div className="w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-500 flex flex-col">
+            
+            {/* 1. Header Principal */}
+            <div className="p-12 pb-8 text-center space-y-4">
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-green-50 rounded-full border border-green-100">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">Sincronização OneDrive Ativa</span>
               </div>
-              <ShieldCheck size={14} className="text-blue-400" />
+              <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tight leading-tight">
+                {selectedCompany}
+              </h2>
             </div>
 
-            <div className="p-10 space-y-8 text-center">
-              <div className="space-y-4">
-                <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-sm border border-blue-100 transition-transform hover:scale-110 duration-500">
-                  <FileText size={48} />
+            {/* 2. Cards Informativos Lado a Lado */}
+            <div className="px-12 grid grid-cols-2 gap-6">
+              <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-4 transition-all hover:shadow-inner">
+                <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm">
+                  <Clock size={24} />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{selectedCompany}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Microsoft Word Desktop Application</p>
-                </div>
-              </div>
-
-              {/* Grid de Informações */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 text-left">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                    <Clock size={12} /> Última Edição Local
-                  </p>
-                  <p className="text-xs font-bold text-slate-700">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Última Edição</p>
+                  <p className="text-sm font-bold text-slate-700 truncate">
                     {getEntryForCompany(selectedCompany)?.lastUpdate 
-                      ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleString('pt-BR')
-                      : 'Nenhum acesso registrado'}
+                      ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                      : '--:--'}
                   </p>
-                </div>
-                <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 text-left">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                    <RefreshCcw size={12} /> Status de Backup
-                  </p>
-                  <p className="text-xs font-bold text-green-600">Sincronizado</p>
                 </div>
               </div>
 
-              {/* Caminho Técnico Exato */}
-              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200 border-dashed text-left space-y-2">
-                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                   <Info size={12}/> Caminho do Arquivo Único
-                 </p>
-                 <code className="block text-[10px] font-mono text-slate-600 break-all leading-relaxed bg-white p-3 rounded-xl border border-slate-100">
-                   C:\Users\Elieser.Fernandes\OneDrive - Sinuelo\CRM-AI PRO\Diario_{selectedCompany.replace(/\s+/g, '_')}.docx
-                 </code>
-              </div>
-
-              {systemError && (
-                <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-center gap-3 text-red-600 text-xs font-bold animate-shake">
-                   <AlertTriangle size={18} /> Erro: Verifique se o OneDrive está logado.
+              <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-4 transition-all hover:shadow-inner">
+                <div className="p-3 bg-white text-green-600 rounded-2xl shadow-sm">
+                  <ShieldCheck size={24} />
                 </div>
-              )}
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Status Backup</p>
+                  <p className="text-sm font-bold text-green-600 truncate uppercase">Sincronizado</p>
+                </div>
+              </div>
+            </div>
 
-              {/* Botão Principal de Abertura */}
+            {/* 3. Botão de Ação Central Destaque */}
+            <div className="p-12 pt-10 pb-16 space-y-6">
               <button 
                 onClick={() => handleOpenWord(selectedCompany)}
                 disabled={isOpening}
-                className="w-full flex items-center justify-center gap-3 py-6 bg-blue-600 text-white rounded-[1.8rem] font-black uppercase text-sm tracking-[0.1em] shadow-xl shadow-blue-900/20 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
+                className="w-full group relative flex items-center justify-center gap-4 py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase text-lg tracking-[0.1em] shadow-[0_20px_40px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-2 transition-all active:scale-95 disabled:opacity-50"
               >
-                {isOpening ? <RefreshCcw className="animate-spin" size={20} /> : <ExternalLink size={20} />}
-                {isOpening ? 'Abrindo Word...' : 'Abrir Diário no Word'}
+                {isOpening ? (
+                  <RefreshCcw className="animate-spin" size={28} />
+                ) : (
+                  <FolderOpen size={28} className="transition-transform group-hover:scale-110" />
+                )}
+                <span>{isOpening ? 'Iniciando...' : 'Abrir Diário no Word'}</span>
+                
+                {/* Efeito Visual de Brilho no Hover */}
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
               </button>
+
+              {systemError && (
+                <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-center justify-center gap-3 text-red-600 text-xs font-bold animate-shake">
+                   <AlertTriangle size={18} /> Erro: Verifique se o OneDrive está logado na Sinuelo.
+                </div>
+              )}
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center px-10">
-               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Formatação Profissional Ativada</p>
-               <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase">
-                 OneDrive Pro <ShieldCheck size={12} />
-               </div>
+            {/* 4. Rodapé Técnico Discreto */}
+            <div className="mt-auto p-8 bg-slate-50 border-t border-slate-100 text-center">
+              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                <Info size={10} /> Localização do Arquivo de Trabalho
+              </p>
+              <code className="text-[10px] font-mono text-slate-400 opacity-60 break-all select-all">
+                C:\Users\Elieser.Fernandes\OneDrive - Sinuelo\CRM-AI PRO\Diario_{selectedCompany.replace(/\s+/g, '_')}.docx
+              </code>
             </div>
+
           </div>
         ) : (
-          <div className="text-center space-y-8 animate-in fade-in duration-700">
+          <div className="text-center space-y-10 animate-in fade-in duration-700">
             <div className="relative inline-block">
-               <div className="w-32 h-32 bg-white rounded-[3rem] shadow-2xl flex items-center justify-center text-slate-200 border border-slate-100">
-                 <Files size={64} strokeWidth={1.5} />
+               <div className="w-36 h-36 bg-white rounded-[3.5rem] shadow-2xl flex items-center justify-center text-slate-200 border border-slate-100">
+                 <Files size={72} strokeWidth={1.2} />
                </div>
-               <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                 <FolderOpen size={24} />
+               <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl">
+                 <FolderOpen size={28} />
                </div>
             </div>
-            <div className="space-y-3">
-              <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tight leading-none">Repositório de Diários</h3>
+            <div className="space-y-4">
+              <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tight leading-none">Gestão de Diários</h3>
               <p className="text-slate-500 max-w-sm mx-auto leading-relaxed font-medium text-lg">
-                Selecione uma empresa na lista para abrir seu documento exclusivo no Microsoft Word.
+                Selecione um cliente para acessar o documento Word exclusivo com backup automático na Sinuelo.
               </p>
             </div>
           </div>
