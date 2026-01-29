@@ -23,6 +23,7 @@ export interface DiaryEntry {
   companyName: string;
   content: string;
   lastUpdate: string;
+  diaryLink?: string; // Link para o OneDrive Web
 }
 
 export interface ForecastRow {

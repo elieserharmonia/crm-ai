@@ -12,8 +12,10 @@ import {
   Info,
   ShieldCheck,
   RefreshCcw,
-  AlertTriangle,
-  CloudCheck
+  Link as LinkIcon,
+  Globe,
+  Save,
+  CheckCircle2
 } from 'lucide-react';
 import { ForecastRow, DiaryEntry } from '../types';
 import { storageService } from '../services/storageService';
@@ -26,12 +28,21 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
-  const [isOpening, setIsOpening] = useState(false);
-  const [systemError, setSystemError] = useState(false);
+  const [linkInput, setLinkInput] = useState('');
+  const [isEditingLink, setIsEditingLink] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     setDiaryEntries(storageService.getDiaryEntries());
   }, []);
+
+  useEffect(() => {
+    if (selectedCompany) {
+      const entry = diaryEntries.find(e => e.companyName === selectedCompany);
+      setLinkInput(entry?.diaryLink || '');
+      setIsEditingLink(!entry?.diaryLink);
+    }
+  }, [selectedCompany, diaryEntries]);
 
   const companies = useMemo(() => {
     return Array.from(new Set(data.map(r => r.CUSTOMER))).filter(Boolean).sort();
@@ -41,23 +52,19 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     return companies.filter(c => c.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [companies, searchTerm]);
 
-  const handleOpenWord = (company: string) => {
-    setIsOpening(true);
-    setSystemError(false);
-    
-    const rootPath = "C:\\Users\\Elieser.Fernandes\\OneDrive - Sinuelo\\CRM-AI PRO";
-    const fileName = `Diario_${company.replace(/\s+/g, '_')}.docx`;
-    const fullPath = `${rootPath}\\${fileName}`;
+  const handleSaveLink = () => {
+    if (!selectedCompany) return;
 
     const now = new Date().toISOString();
     const newEntries = [...diaryEntries];
-    const index = newEntries.findIndex(e => e.companyName === company);
+    const index = newEntries.findIndex(e => e.companyName === selectedCompany);
     
     const updatedEntry: DiaryEntry = {
       id: index >= 0 ? newEntries[index].id : Date.now().toString(),
-      companyName: company,
-      content: "[Gerenciado no Microsoft Word Desktop]",
-      lastUpdate: now
+      companyName: selectedCompany,
+      content: "[Link Gerenciado via OneDrive Web]",
+      lastUpdate: now,
+      diaryLink: linkInput
     };
 
     if (index >= 0) newEntries[index] = updatedEntry;
@@ -65,19 +72,23 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
 
     setDiaryEntries(newEntries);
     storageService.saveDiaryEntries(newEntries);
+    setIsEditingLink(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
 
-    try {
-      const docxBlob = new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const url = URL.createObjectURL(docxBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setSystemError(true);
-    } finally {
-      setTimeout(() => setIsOpening(false), 800);
+  const handleOpenDiary = () => {
+    const entry = diaryEntries.find(e => e.companyName === selectedCompany);
+    if (entry?.diaryLink) {
+      window.open(entry.diaryLink, '_blank', 'noopener,noreferrer');
+      
+      // Atualizar data de último acesso
+      const now = new Date().toISOString();
+      const newEntries = diaryEntries.map(e => 
+        e.companyName === selectedCompany ? { ...e, lastUpdate: now } : e
+      );
+      setDiaryEntries(newEntries);
+      storageService.saveDiaryEntries(newEntries);
     }
   };
 
@@ -90,7 +101,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
       {/* Sidebar de Clientes */}
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Diretório Sinuelo</h2>
+          <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Repositório de Diários</h2>
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
             <input 
@@ -124,83 +135,134 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                   </div>
                   <div className="min-w-0">
                     <p className="font-bold text-[10px] truncate uppercase tracking-tight leading-none">{company}</p>
-                    {entry && (
+                    {entry?.lastUpdate && (
                       <p className={`text-[7px] mt-0.5 font-black uppercase opacity-60 ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
-                        Ativo: {new Date(entry.lastUpdate).toLocaleDateString()}
+                        Visto: {new Date(entry.lastUpdate).toLocaleDateString()}
                       </p>
                     )}
                   </div>
                 </div>
-                <ChevronRight size={12} className={`${isActive ? 'text-white' : 'text-slate-300'}`} />
+                {entry?.diaryLink && <Globe size={10} className={isActive ? 'text-blue-400' : 'text-green-500'} />}
               </button>
             );
           })}
         </div>
       </aside>
 
-      {/* Main Panel Compacto */}
+      {/* Main Panel Web-Friendly */}
       <main className="flex-1 bg-slate-100/50 flex flex-col items-center justify-start p-8 overflow-y-auto">
         {selectedCompany ? (
           <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
             
             <div className="p-8 space-y-6">
-              {/* 1. Header Horizontal Compacto */}
+              {/* 1. Header Horizontal */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight truncate max-w-md">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
                     {selectedCompany}
                   </h2>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full border border-green-100">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-[8px] font-black text-green-700 uppercase tracking-widest">Sincronização Ativa</span>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-full border border-blue-100">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                    <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest">Sincronização Web OneDrive</span>
                   </div>
                 </div>
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shadow-inner">
+                <div className="p-2 bg-slate-100 text-slate-400 rounded-xl">
                   <FileText size={20} />
                 </div>
               </div>
 
-              {/* 2. Barra de Status Horizontal */}
-              <div className="flex items-center gap-8 py-4 px-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Clock size={14} className="text-slate-400" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Última Edição:</span>
-                  <span className="text-[10px] font-bold text-slate-700">
-                    {getEntryForCompany(selectedCompany)?.lastUpdate 
-                      ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-                      : 'Nenhum registro'}
-                  </span>
+              {/* 2. Status e Configuração de Link */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-8 py-4 px-6 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} className="text-slate-400" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Acesso:</span>
+                    <span className="text-[10px] font-bold text-slate-700">
+                      {getEntryForCompany(selectedCompany)?.lastUpdate 
+                        ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                        : '--:--'}
+                    </span>
+                  </div>
+                  <div className="h-4 w-[1px] bg-slate-200" />
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-blue-500" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Backup:</span>
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Ativo via Nuvem</span>
+                  </div>
                 </div>
-                <div className="h-4 w-[1px] bg-slate-200" />
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-green-500" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Backup Sinuelo:</span>
-                  <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Sincronizado</span>
+
+                {/* Input de Link */}
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <LinkIcon size={12} /> Link do Documento no OneDrive Web
+                    </label>
+                    {!isEditingLink && (
+                      <button 
+                        onClick={() => setIsEditingLink(true)}
+                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                      >
+                        Alterar Link
+                      </button>
+                    )}
+                  </div>
+                  
+                  {isEditingLink ? (
+                    <div className="flex gap-2">
+                      <input 
+                        className="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none text-xs focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                        placeholder="Cole aqui o link de compartilhamento do OneDrive..."
+                        value={linkInput}
+                        onChange={(e) => setLinkInput(e.target.value)}
+                      />
+                      <button 
+                        onClick={handleSaveLink}
+                        className="px-4 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+                      >
+                        <Save size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl truncate">
+                      <Globe size={14} className="text-green-500 shrink-0" />
+                      <span className="text-xs text-slate-500 truncate font-mono">{linkInput}</span>
+                    </div>
+                  )}
+                  
+                  {saveSuccess && (
+                    <p className="text-[10px] font-bold text-green-600 flex items-center gap-1 animate-in fade-in">
+                      <CheckCircle2 size={12} /> Link salvo com sucesso!
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* 3. Botão de Ação Primário Destaque */}
+              {/* 3. Botão de Ação Primário */}
               <button 
-                onClick={() => handleOpenWord(selectedCompany)}
-                disabled={isOpening}
-                className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl hover:bg-blue-600 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
+                onClick={handleOpenDiary}
+                disabled={!linkInput || isEditingLink}
+                className={`w-full flex items-center justify-center gap-3 py-5 rounded-[1.5rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl transition-all active:scale-95 ${
+                  !linkInput || isEditingLink 
+                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed' 
+                    : 'bg-slate-900 text-white hover:bg-blue-600 hover:-translate-y-1'
+                }`}
               >
-                {isOpening ? <RefreshCcw className="animate-spin" size={18} /> : <ExternalLink size={18} />}
-                {isOpening ? 'Aguarde...' : 'Abrir Diário no Word'}
+                <ExternalLink size={18} />
+                Abrir Diário no Word Online
               </button>
 
-              {systemError && (
-                <div className="p-3 bg-red-50 rounded-xl border border-red-100 flex items-center justify-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest animate-shake">
-                   <AlertTriangle size={14} /> Falha no OneDrive
-                </div>
-              )}
+              <div className="p-4 bg-blue-50 rounded-xl flex items-start gap-3 border border-blue-100/50">
+                 <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                 <p className="text-[10px] text-blue-700 font-medium leading-relaxed uppercase tracking-tight">
+                   Ao abrir, você pode editar no navegador ou clicar em <strong>"Abrir no Aplicativo da Área de Trabalho"</strong> dentro do Word para usar a versão completa do seu PC.
+                 </p>
+              </div>
             </div>
 
-            {/* 4. Rodapé Técnico Minimalista */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2 group cursor-help">
-              <Info size={10} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
-              <p className="text-[8px] font-mono text-slate-400 opacity-60 truncate max-w-xs group-hover:opacity-100 transition-opacity">
-                C:\Users\Elieser.Fernandes\OneDrive - Sinuelo\CRM-AI PRO\Diario_{selectedCompany.replace(/\s+/g, '_')}.docx
+            {/* 4. Rodapé Informativo */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+              <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">
+                Segurança Web: Nenhuma informação do seu disco local é acessada diretamente.
               </p>
             </div>
 
@@ -216,9 +278,9 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                </div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Gestão Sinuelo</h3>
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Gestão de Diários</h3>
               <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium leading-snug">
-                Abra o diário de bordo diretamente no Microsoft Word com sincronização Sinuelo.
+                Configure os links do OneDrive Web para cada cliente e acesse seus documentos com segurança.
               </p>
             </div>
           </div>
