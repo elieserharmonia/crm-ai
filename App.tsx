@@ -54,6 +54,10 @@ const App: React.FC = () => {
     storageService.saveForecast(data);
   }, [data]);
 
+  useEffect(() => {
+    storageService.saveGoals(goals);
+  }, [goals]);
+
   const filteredData = useMemo(() => {
     if (!user) return [];
     if (!profile.name || profile.name.trim() === "") return [];
@@ -114,7 +118,15 @@ const App: React.FC = () => {
               <ForecastTab data={filteredData} setData={setData} onRowSelect={setSelectedRow} user={user} />
             )}
             {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} profile={profile} />}
-            {activeTab === Tab.Goals && <GoalsTab data={filteredData} goals={goals} setGoals={setGoals} onGoalClick={() => setActiveTab(Tab.Forecast)} />}
+            {activeTab === Tab.Goals && (
+              <GoalsTab 
+                data={filteredData} 
+                goals={goals} 
+                setGoals={setGoals} 
+                onGoalClick={() => setActiveTab(Tab.Forecast)} 
+                profile={profile}
+              />
+            )}
             {activeTab === Tab.Orders && <OrdersTab pos={pos} setPos={setPos} />}
             {activeTab === Tab.Companies && (
               <CompaniesTab data={filteredData} contacts={contacts} setContacts={setContacts} resetTrigger={companiesResetTrigger} onFilterByCompany={() => setActiveTab(Tab.Forecast)} />
