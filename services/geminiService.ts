@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { ForecastRow, SalesPersonProfile, User } from "../types";
 
@@ -21,7 +20,8 @@ export const geminiService = {
       const ai = getAI();
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: `Escreva um e-mail de boas-vindas curto para o vendedor ${user.name} que acabou de entrar no CRM.` }] }],
+        // Fix: Use simple string for text prompt as per guidelines
+        contents: `Escreva um e-mail de boas-vindas curto para o vendedor ${user.name} que acabou de entrar no CRM.`,
       });
       return response.text;
     } catch (e) {
@@ -57,7 +57,8 @@ export const geminiService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: [{ parts: [{ text: prompt }] }],
+        // Fix: Use simple string for text prompt as per guidelines
+        contents: prompt,
       });
       return response.text || "Não foi possível gerar os conselhos estratégicos no momento.";
     } catch (e: any) {
@@ -75,7 +76,8 @@ export const geminiService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: [{ parts: [{ text: prompt }] }],
+        // Fix: Use simple string for text prompt as per guidelines
+        contents: prompt,
         config: {
           tools: [{ googleMaps: {} }],
           ...(location && {

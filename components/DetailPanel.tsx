@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
@@ -17,9 +16,9 @@ import {
   Briefcase, 
   MapPin, 
   CheckSquare,
-  // Fix: Added missing icons TrendingUp and CheckCircle2 to resolve "Cannot find name" errors
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Building
 } from 'lucide-react';
 import { ForecastRow, SalesPersonProfile, User, Contact } from '../types';
 import { storageService } from '../services/storageService';
@@ -53,7 +52,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
   if (!localRow) return null;
 
   const isManager = user.role === 'gestor';
-  const canEdit = isManager || true; // Simplificado para o exemplo
+  const canEdit = isManager || true; 
 
   const handleChange = (field: keyof ForecastRow, value: any) => {
     setLocalRow({ ...localRow, [field]: value });
@@ -88,35 +87,48 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
         </button>
       </div>
 
-      {/* Área de Scroll - Conteúdo seguindo ordem do Forecast */}
+      {/* Área de Scroll - Conteúdo seguindo ordem exata do Forecast */}
       <div className="flex-1 overflow-auto p-8 space-y-10 custom-scrollbar pb-32">
-        <div className="space-y-12">
+        <div className="space-y-10">
           
-          {/* 1. Responsável e Identificação */}
-          <div className="grid grid-cols-2 gap-6">
-            <section className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                <UserIcon size={12}/> Responsável (RESP.)
-              </label>
-              <input 
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
-                value={localRow['RESP.']}
-                onChange={e => handleChange('RESP.', e.target.value)}
-              />
-            </section>
-            <section className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                <Briefcase size={12}/> Fornecedor (SUPPLIER)
-              </label>
-              <input 
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
-                value={localRow.SUPPLIER}
-                onChange={e => handleChange('SUPPLIER', e.target.value)}
-              />
-            </section>
-          </div>
+          {/* 1. RESPONSÁVEL (RESP.) */}
+          <section className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
+              <UserIcon size={12}/> Responsável (RESP.)
+            </label>
+            <input 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+              value={localRow['RESP.']}
+              onChange={e => handleChange('RESP.', e.target.value)}
+            />
+          </section>
 
-          {/* 2. Descrição Completa */}
+          {/* 2. CLIENTE (CUSTOMER) */}
+          <section className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
+              {/* Fix: Added Building icon import in lucide-react */}
+              <Building size={12}/> Cliente (CUSTOMER)
+            </label>
+            <input 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+              value={localRow.CUSTOMER}
+              onChange={e => handleChange('CUSTOMER', e.target.value)}
+            />
+          </section>
+
+          {/* 3. FORNECEDOR (SUPPLIER) */}
+          <section className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
+              <Briefcase size={12}/> Fornecedor (SUPPLIER)
+            </label>
+            <input 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+              value={localRow.SUPPLIER}
+              onChange={e => handleChange('SUPPLIER', e.target.value)}
+            />
+          </section>
+
+          {/* 4. DESCRIÇÃO (DESCRIPTION) */}
           <section className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
               <FileText size={12}/> Descrição do Negócio (DESCRIPTION)
@@ -128,11 +140,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             />
           </section>
 
-          {/* 3. Financeiro e Localização */}
+          {/* 5. FINANCEIRO E UF */}
           <div className="grid grid-cols-2 gap-6">
             <section className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                <DollarSign size={12}/> Valor Estimado (AMOUNT)
+                <DollarSign size={12}/> Valor (AMOUNT)
               </label>
               <input 
                 type="number"
@@ -153,17 +165,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             </section>
           </div>
 
-          {/* 4. Confiança */}
+          {/* 6. CONFIANÇA */}
           <section className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-              <TrendingUp size={12}/> Probabilidade de Fechamento (Confidence)
+              <TrendingUp size={12}/> Confiança (Confidence)
             </label>
-            <div className="flex bg-slate-50 p-2 rounded-[1.5rem] border border-slate-200 gap-1">
+            <div className="flex bg-slate-50 p-2 rounded-[1.5rem] border border-slate-200 gap-1 overflow-x-auto custom-scrollbar">
               {[0, 10, 30, 50, 80, 90, 100].map(v => (
                 <button
                   key={v}
                   onClick={() => handleChange('Confidence', v)}
-                  className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all ${localRow.Confidence === v ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-200'}`}
+                  className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${localRow.Confidence === v ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-200'}`}
                 >
                   {v}%
                 </button>
@@ -171,10 +183,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             </div>
           </section>
 
-          {/* 5. Planejamento Mensal */}
+          {/* 7. CRONOGRAMA */}
           <section className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-              <Calendar size={12}/> Cronograma de Faturamento (JAN - 2026)
+              <Calendar size={12}/> Planejamento (JAN - 2026)
             </label>
             <div className="grid grid-cols-4 gap-2">
               {['JAN', 'FEV', 'MAR', '2026'].map(m => (
@@ -190,10 +202,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
             </div>
           </section>
 
-          {/* 6. Follow-up */}
+          {/* 8. FOLLOW-UP */}
           <section className="space-y-2">
              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-               <Clock size={12}/> Histórico e Próximos Passos (FOLLOW-UP)
+               <Clock size={12}/> Follow-Up (Histórico)
              </label>
              <textarea 
                 className="w-full p-8 bg-slate-50 border border-slate-200 rounded-[2rem] h-56 outline-none font-medium text-sm italic leading-relaxed focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
@@ -202,12 +214,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
              />
           </section>
 
-          {/* 7. Contatos */}
-          <section className="space-y-4 pt-4 border-t border-slate-100">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Users size={14}/> Contatos Associados (CONTATOS)
-            </h3>
-            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-1">
+          {/* 9. CONTATOS */}
+          <section className="space-y-4 pt-4 border-t border-slate-100 pb-10">
+            <div className="flex justify-between items-center">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Users size={14}/> Seleção de Contatos
+              </h3>
+              <span className="text-[9px] font-bold text-blue-500 uppercase">Vinculado a {localRow.CUSTOMER}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
               {availableContacts.map(contact => {
                 const isSelected = localRow.CONTATOS?.includes(contact.name);
                 return (
@@ -225,13 +240,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
                   </button>
                 );
               })}
+              {availableContacts.length === 0 && (
+                <div className="p-4 bg-slate-50 rounded-xl text-center text-[10px] font-bold text-slate-400 uppercase">Nenhum contato cadastrado para este cliente.</div>
+              )}
             </div>
+            <input 
+                type="text"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-800 text-xs"
+                placeholder="Nomes dos contatos..."
+                value={localRow.CONTATOS || ''}
+                onChange={e => handleChange('CONTATOS', e.target.value)}
+              />
           </section>
         </div>
       </div>
 
-      {/* Footer com Botão de Salvar */}
-      <div className="p-8 border-t bg-slate-50/80 backdrop-blur-md flex items-center justify-between shrink-0">
+      {/* Footer com Botão de Salvar (Obrigatório) */}
+      <div className="p-8 border-t bg-slate-50/90 backdrop-blur-md flex items-center justify-between shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
         <button 
           onClick={onClose}
           className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
@@ -240,7 +265,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
         </button>
         <button 
           onClick={handleSave}
-          className={`flex items-center gap-3 px-12 py-4 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl transition-all active:scale-95 ${saveStatus ? 'bg-green-500 text-white' : 'bg-slate-900 text-white hover:bg-blue-600'}`}
+          className={`flex items-center gap-3 px-14 py-4 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl transition-all active:scale-95 ${saveStatus ? 'bg-green-500 text-white' : 'bg-slate-900 text-white hover:bg-blue-600'}`}
         >
           {saveStatus ? <CheckCircle2 size={18}/> : <Save size={18}/>}
           {saveStatus ? 'Alterações Salvas' : 'Salvar Alterações'}
