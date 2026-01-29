@@ -355,7 +355,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                         onChange={e => setManualRow({...manualRow, diaryLink: e.target.value})}
                     />
                     <p className="text-[9px] text-blue-400 font-bold uppercase tracking-tight pl-1 italic">
-                      Este link será associado a este cliente para o protocolo ms-word.
+                      Dica: Use o link de compartilhamento com permissão de edição.
                     </p>
                  </div>
               </div>

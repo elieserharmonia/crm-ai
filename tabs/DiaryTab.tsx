@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   CloudCheck,
   AlertTriangle,
-  Settings
+  Settings,
+  MousePointer2
 } from 'lucide-react';
 import { ForecastRow, DiaryEntry } from '../types';
 import { storageService } from '../services/storageService';
@@ -65,25 +66,33 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
-  const handleOpenDiary = () => {
+  const handleOpenDiary = (forceWeb: boolean = false) => {
     const entry = diaryEntries.find(e => e.companyName === selectedCompany);
-    if (entry?.diaryLink) {
-      const officeUrl = `ms-word:ofe|u|${entry.diaryLink}`;
+    if (!entry?.diaryLink) return;
+
+    if (forceWeb) {
+      window.open(entry.diaryLink, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // Tratamento de URL para o protocolo Office
+    // Remove parâmetros de compartilhamento que podem confundir o protocolo ms-word
+    const urlDireta = entry.diaryLink.split('?')[0]; 
+    const officeUrl = `ms-word:ofe|u|${urlDireta}`;
+    
+    try {
+      window.location.href = officeUrl;
       
-      try {
-        window.location.href = officeUrl;
-        
-        // Atualizar data de último acesso
-        const now = new Date().toISOString();
-        const newEntries = diaryEntries.map(e => 
-          e.companyName === selectedCompany ? { ...e, lastUpdate: now } : e
-        );
-        setDiaryEntries(newEntries);
-        storageService.saveDiaryEntries(newEntries);
-      } catch (e) {
-        console.error("Falha ao abrir o Word Desktop:", e);
-        window.open(entry.diaryLink, '_blank', 'noopener,noreferrer');
-      }
+      // Atualizar data de último acesso
+      const now = new Date().toISOString();
+      const newEntries = diaryEntries.map(e => 
+        e.companyName === selectedCompany ? { ...e, lastUpdate: now } : e
+      );
+      setDiaryEntries(newEntries);
+      storageService.saveDiaryEntries(newEntries);
+    } catch (e) {
+      console.error("Falha ao abrir o Word Desktop via protocolo:", e);
+      window.open(entry.diaryLink, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -190,24 +199,35 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
               </div>
 
               {/* 3. Botão de Ação Primário Destaque */}
-              <button 
-                onClick={handleOpenDiary}
-                disabled={!linkInput || isEditingLink}
-                className={`w-full flex items-center justify-center gap-3 py-5 rounded-[1.5rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl transition-all active:scale-95 ${
-                  !linkInput || isEditingLink 
-                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200' 
-                    : 'bg-slate-900 text-white hover:bg-blue-600 hover:-translate-y-1'
-                }`}
-              >
-                {!linkInput ? <AlertTriangle size={18} /> : <ExternalLink size={18} />}
-                {!linkInput ? 'Link não configurado' : 'Abrir Diário no Word'}
-              </button>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => handleOpenDiary(false)}
+                  disabled={!linkInput || isEditingLink}
+                  className={`w-full flex items-center justify-center gap-3 py-5 rounded-[1.5rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl transition-all active:scale-95 ${
+                    !linkInput || isEditingLink 
+                      ? 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200' 
+                      : 'bg-slate-900 text-white hover:bg-blue-600 hover:-translate-y-1'
+                  }`}
+                >
+                  {!linkInput ? <AlertTriangle size={18} /> : <ExternalLink size={18} />}
+                  {!linkInput ? 'Link não configurado' : 'Abrir Diário no Word'}
+                </button>
+                
+                {linkInput && !isEditingLink && (
+                  <button 
+                    onClick={() => handleOpenDiary(true)}
+                    className="w-full flex items-center justify-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-colors"
+                  >
+                    <MousePointer2 size={12} /> Não abriu? Clique aqui para abrir no navegador
+                  </button>
+                )}
+              </div>
 
               {/* Input de Link Ocultável */}
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Settings size={12} /> Configuração do Cliente
+                    <Settings size={12} /> Configuração do Link OneDrive
                   </label>
                   {!isEditingLink && (
                     <button 
@@ -220,19 +240,24 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                 </div>
                 
                 {isEditingLink ? (
-                  <div className="flex gap-2">
-                    <input 
-                      className="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none text-xs focus:ring-2 focus:ring-blue-500 transition-all font-medium"
-                      placeholder="Cole a URL do documento OneDrive aqui..."
-                      value={linkInput}
-                      onChange={(e) => setLinkInput(e.target.value)}
-                    />
-                    <button 
-                      onClick={handleSaveLink}
-                      className="px-4 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95"
-                    >
-                      <Save size={16} />
-                    </button>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <input 
+                        className="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none text-xs focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                        placeholder="Cole a URL do documento OneDrive aqui..."
+                        value={linkInput}
+                        onChange={(e) => setLinkInput(e.target.value)}
+                      />
+                      <button 
+                        onClick={handleSaveLink}
+                        className="px-4 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+                      >
+                        <Save size={16} />
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-blue-500 font-bold uppercase tracking-tight pl-1 italic">
+                      Dica: Use o link de compartilhamento com permissão de edição.
+                    </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-xl truncate">
@@ -245,7 +270,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                 
                 {saveSuccess && (
                   <p className="text-[10px] font-bold text-green-600 flex items-center gap-1 animate-in fade-in">
-                    <CheckCircle2 size={12} /> Link salvo no cadastro do cliente!
+                    <CheckCircle2 size={12} /> Link atualizado com sucesso!
                   </p>
                 )}
               </div>
@@ -254,7 +279,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
                 <div className="p-4 bg-amber-50 rounded-xl flex items-start gap-3 border border-amber-100">
                    <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
                    <p className="text-[9px] text-amber-700 font-bold leading-relaxed uppercase tracking-tight">
-                     <strong>Atenção:</strong> Adicione o link do OneDrive acima ou no cadastro da oportunidade para habilitar o acesso direto ao Word Desktop.
+                     <strong>Atenção:</strong> O Word requer um link válido do OneDrive Web para habilitar a edição direta no computador.
                    </p>
                 </div>
               )}
@@ -264,7 +289,7 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
             <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2 group">
               <Info size={10} className="text-slate-200 group-hover:text-blue-400 transition-colors" />
               <p className="text-[7px] font-mono text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-xs">
-                Protocolo Ativo: ms-word:ofe|u|{linkInput || 'null'}
+                Protocolo: ms-word:ofe|u|{linkInput.split('?')[0] || 'null'}
               </p>
             </div>
 
