@@ -23,7 +23,7 @@ export interface DiaryEntry {
   companyName: string;
   content: string;
   lastUpdate: string;
-  diaryLink?: string; // Link para o OneDrive Web
+  diaryLink?: string;
 }
 
 export interface ForecastRow {
@@ -45,6 +45,19 @@ export interface ForecastRow {
   oweInfoToClient: boolean;
   lastUpdate?: string;
   notes?: string;
+  budgetCode?: string; // Número do Orçamento
+}
+
+export interface PurchaseOrder {
+  id: string;
+  forecastId: string;
+  customer: string;
+  supplier: string;
+  budgetCode: string; // Vinculado ao orçamento
+  poNumber: string;   // Número do pedido
+  amount: number;     // Valor fechado
+  date: string;
+  description: string;
 }
 
 export interface Notification {
@@ -75,6 +88,7 @@ export enum Tab {
   Forecast = 'previsao',
   Dashboard = 'painel',
   Goals = 'metas',
+  Orders = 'pedidos',
   Companies = 'empresas',
   Diary = 'diario',
   Settings = 'configuracoes'

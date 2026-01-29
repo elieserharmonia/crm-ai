@@ -11,7 +11,8 @@ import {
   LogOut,
   Bell,
   AlertTriangle,
-  BookText
+  BookText,
+  FileCheck
 } from 'lucide-react';
 import { Tab, User, Notification, SalesPersonProfile } from '../types';
 
@@ -33,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: Tab.Forecast, label: 'Forecast', icon: TableProperties },
     { id: Tab.Dashboard, label: 'Dashboard', icon: LayoutDashboard },
     { id: Tab.Goals, label: 'Metas', icon: Target },
+    { id: Tab.Orders, label: 'Pedidos (POs)', icon: FileCheck },
     { id: Tab.Companies, label: 'Empresas', icon: Building2 },
     { id: Tab.Diary, label: 'Diário', icon: BookText },
     { id: Tab.Settings, label: 'Configurações', icon: Settings },
@@ -43,7 +45,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
-      {/* Sidebar */}
       <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-slate-900 text-white flex flex-col z-50`}>
         <div className="p-6 flex items-center justify-between">
           {isSidebarOpen && <span className="text-2xl font-black tracking-tight text-blue-400">CRM-IA</span>}
@@ -95,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
             </div>
             {isSidebarOpen && (
               <button onClick={onLogout} className="w-full flex items-center gap-2 text-[10px] font-black uppercase text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors tracking-widest">
-                <LogOut size={14} /> Sair do Sistema
+                <LogOut size={14} /> Sair
               </button>
             )}
         </div>

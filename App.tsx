@@ -7,9 +7,10 @@ import GoalsTab from './tabs/GoalsTab';
 import CompaniesTab from './tabs/CompaniesTab';
 import DiaryTab from './tabs/DiaryTab';
 import SettingsTab from './tabs/SettingsTab';
+import OrdersTab from './tabs/OrdersTab';
 import DetailPanel from './components/DetailPanel';
 import LoginPage from './components/LoginPage';
-import { ForecastRow, Goal, SalesPersonProfile, Tab, User, Notification, Contact } from './types';
+import { ForecastRow, Goal, SalesPersonProfile, Tab, User, Notification, Contact, PurchaseOrder } from './types';
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { notificationService } from './services/notificationService';
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Forecast);
   const [data, setData] = useState<ForecastRow[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [pos, setPos] = useState<PurchaseOrder[]>([]);
   const [profile, setProfile] = useState<SalesPersonProfile>({ name: '', email: '' });
   const [selectedRow, setSelectedRow] = useState<ForecastRow | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -33,6 +35,7 @@ const App: React.FC = () => {
       
       setData(storageService.getForecast());
       setGoals(storageService.getGoals());
+      setPos(storageService.getPOs());
       setProfile(storageService.getProfile());
       
       const savedContacts = localStorage.getItem('crm_ia_contacts_db');
@@ -50,10 +53,6 @@ const App: React.FC = () => {
     notificationService.getAlerts(data).then(setNotifications);
     storageService.saveForecast(data);
   }, [data]);
-
-  useEffect(() => {
-    localStorage.setItem('crm_ia_contacts_db', JSON.stringify(contacts));
-  }, [contacts]);
 
   const filteredData = useMemo(() => {
     if (!user) return [];
@@ -101,12 +100,10 @@ const App: React.FC = () => {
               <UserCircle size={48} />
             </div>
             <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Acesso Bloqueado</h2>
-            <p className="text-slate-500 max-w-sm mt-2 font-medium">
-              Configure seu perfil para liberar os dados.
-            </p>
+            <p className="text-slate-500 max-w-sm mt-2 font-medium">Configure seu perfil para liberar os dados.</p>
             <button 
               onClick={() => setActiveTab(Tab.Settings)}
-              className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+              className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all"
             >
               CONFIGURAR AGORA
             </button>
@@ -114,23 +111,13 @@ const App: React.FC = () => {
         ) : (
           <>
             {activeTab === Tab.Forecast && (
-              <ForecastTab 
-                data={filteredData} 
-                setData={setData} 
-                onRowSelect={setSelectedRow} 
-                user={user} 
-              />
+              <ForecastTab data={filteredData} setData={setData} onRowSelect={setSelectedRow} user={user} />
             )}
             {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} />}
             {activeTab === Tab.Goals && <GoalsTab data={filteredData} goals={goals} setGoals={setGoals} onGoalClick={() => setActiveTab(Tab.Forecast)} />}
+            {activeTab === Tab.Orders && <OrdersTab pos={pos} setPos={setPos} />}
             {activeTab === Tab.Companies && (
-              <CompaniesTab 
-                data={filteredData} 
-                contacts={contacts} 
-                setContacts={setContacts}
-                resetTrigger={companiesResetTrigger}
-                onFilterByCompany={() => setActiveTab(Tab.Forecast)} 
-              />
+              <CompaniesTab data={filteredData} contacts={contacts} setContacts={setContacts} resetTrigger={companiesResetTrigger} onFilterByCompany={() => setActiveTab(Tab.Forecast)} />
             )}
             {activeTab === Tab.Diary && <DiaryTab data={filteredData} />}
             {activeTab === Tab.Settings && <SettingsTab profile={profile} setProfile={setProfile} user={user} />}

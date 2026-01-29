@@ -1,11 +1,12 @@
 
-import { ForecastRow, Goal, SalesPersonProfile, DiaryEntry } from '../types';
+import { ForecastRow, Goal, SalesPersonProfile, DiaryEntry, PurchaseOrder } from '../types';
 
 const KEYS = {
   FORECAST: 'crm_ia_forecast_data',
   GOALS: 'crm_ia_goals_data',
   PROFILE: 'crm_ia_sales_profile',
-  DIARY: 'crm_ia_diary_entries'
+  DIARY: 'crm_ia_diary_entries',
+  POS: 'crm_ia_pos_data'
 };
 
 export const storageService = {
@@ -22,6 +23,13 @@ export const storageService = {
   },
   saveGoals: (data: Goal[]) => {
     localStorage.setItem(KEYS.GOALS, JSON.stringify(data));
+  },
+  getPOs: (): PurchaseOrder[] => {
+    const data = localStorage.getItem(KEYS.POS);
+    return data ? JSON.parse(data) : [];
+  },
+  savePOs: (data: PurchaseOrder[]) => {
+    localStorage.setItem(KEYS.POS, JSON.stringify(data));
   },
   getProfile: (): SalesPersonProfile => {
     const data = localStorage.getItem(KEYS.PROFILE);
