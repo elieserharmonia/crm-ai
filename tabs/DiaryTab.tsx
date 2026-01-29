@@ -6,14 +6,14 @@ import {
   Clock, 
   ChevronRight,
   FileText,
-  CheckCircle2,
   ExternalLink,
   Files,
   FolderOpen,
   Info,
   ShieldCheck,
   RefreshCcw,
-  AlertTriangle
+  AlertTriangle,
+  CloudCheck
 } from 'lucide-react';
 import { ForecastRow, DiaryEntry } from '../types';
 import { storageService } from '../services/storageService';
@@ -29,7 +29,6 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   const [isOpening, setIsOpening] = useState(false);
   const [systemError, setSystemError] = useState(false);
 
-  // Carregar metadados salvos
   useEffect(() => {
     setDiaryEntries(storageService.getDiaryEntries());
   }, []);
@@ -46,12 +45,10 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     setIsOpening(true);
     setSystemError(false);
     
-    // Caminho Fixo Conforme Solicitado
     const rootPath = "C:\\Users\\Elieser.Fernandes\\OneDrive - Sinuelo\\CRM-AI PRO";
     const fileName = `Diario_${company.replace(/\s+/g, '_')}.docx`;
     const fullPath = `${rootPath}\\${fileName}`;
 
-    // Atualização de Metadados
     const now = new Date().toISOString();
     const newEntries = [...diaryEntries];
     const index = newEntries.findIndex(e => e.companyName === company);
@@ -70,7 +67,6 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
     storageService.saveDiaryEntries(newEntries);
 
     try {
-      // Simulação de Gatilho de Sistema
       const docxBlob = new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       const url = URL.createObjectURL(docxBlob);
       const link = document.createElement('a');
@@ -92,22 +88,22 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
   return (
     <div className="flex h-[calc(100vh-180px)] -m-8 overflow-hidden bg-slate-50">
       {/* Sidebar de Clientes */}
-      <aside className="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pastas Sincronizadas</h2>
+      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Diretório Sinuelo</h2>
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
             <input 
               type="text" 
-              placeholder="Localizar cliente..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+              placeholder="Buscar cliente..."
+              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-xs focus:ring-2 focus:ring-blue-500 transition-all font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-0.5">
           {filteredCompanies.map(company => {
             const isActive = selectedCompany === company;
             const entry = getEntryForCompany(company);
@@ -116,125 +112,113 @@ const DiaryTab: React.FC<DiaryTabProps> = ({ data }) => {
               <button 
                 key={company}
                 onClick={() => setSelectedCompany(company)}
-                className={`w-full text-left p-4 rounded-2xl transition-all flex items-center justify-between group ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center justify-between group ${
                   isActive 
-                    ? 'bg-slate-900 text-white shadow-xl scale-[1.02]' 
+                    ? 'bg-slate-900 text-white shadow-lg' 
                     : 'text-slate-600 hover:bg-slate-100 border border-transparent'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-2 rounded-lg shrink-0 ${isActive ? 'bg-blue-600 shadow-inner' : 'bg-slate-100'}`}>
-                    <Building2 size={16} />
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-blue-600' : 'bg-slate-100'}`}>
+                    <Building2 size={14} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-[11px] truncate uppercase tracking-tight leading-none">{company}</p>
+                    <p className="font-bold text-[10px] truncate uppercase tracking-tight leading-none">{company}</p>
                     {entry && (
-                      <p className={`text-[8px] mt-1 font-black uppercase opacity-60 ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
-                        Visto: {new Date(entry.lastUpdate).toLocaleDateString()}
+                      <p className={`text-[7px] mt-0.5 font-black uppercase opacity-60 ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
+                        Ativo: {new Date(entry.lastUpdate).toLocaleDateString()}
                       </p>
                     )}
                   </div>
                 </div>
-                <ChevronRight size={14} className={`opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'text-white' : 'text-slate-300'}`} />
+                <ChevronRight size={12} className={`${isActive ? 'text-white' : 'text-slate-300'}`} />
               </button>
             );
           })}
         </div>
       </aside>
 
-      {/* Main Dashboard Panel */}
-      <main className="flex-1 bg-slate-100/50 flex flex-col items-center justify-center p-12 overflow-y-auto">
+      {/* Main Panel Compacto */}
+      <main className="flex-1 bg-slate-100/50 flex flex-col items-center justify-start p-8 overflow-y-auto">
         {selectedCompany ? (
-          <div className="w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-500 flex flex-col">
+          <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
             
-            {/* 1. Header Principal */}
-            <div className="p-12 pb-8 text-center space-y-4">
-              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-green-50 rounded-full border border-green-100">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">Sincronização OneDrive Ativa</span>
-              </div>
-              <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tight leading-tight">
-                {selectedCompany}
-              </h2>
-            </div>
-
-            {/* 2. Cards Informativos Lado a Lado */}
-            <div className="px-12 grid grid-cols-2 gap-6">
-              <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-4 transition-all hover:shadow-inner">
-                <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm">
-                  <Clock size={24} />
+            <div className="p-8 space-y-6">
+              {/* 1. Header Horizontal Compacto */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight truncate max-w-md">
+                    {selectedCompany}
+                  </h2>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full border border-green-100">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-[8px] font-black text-green-700 uppercase tracking-widest">Sincronização Ativa</span>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Última Edição</p>
-                  <p className="text-sm font-bold text-slate-700 truncate">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shadow-inner">
+                  <FileText size={20} />
+                </div>
+              </div>
+
+              {/* 2. Barra de Status Horizontal */}
+              <div className="flex items-center gap-8 py-4 px-6 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className="text-slate-400" />
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Última Edição:</span>
+                  <span className="text-[10px] font-bold text-slate-700">
                     {getEntryForCompany(selectedCompany)?.lastUpdate 
-                      ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                      : '--:--'}
-                  </p>
+                      ? new Date(getEntryForCompany(selectedCompany)!.lastUpdate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                      : 'Nenhum registro'}
+                  </span>
+                </div>
+                <div className="h-4 w-[1px] bg-slate-200" />
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-green-500" />
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Backup Sinuelo:</span>
+                  <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Sincronizado</span>
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-4 transition-all hover:shadow-inner">
-                <div className="p-3 bg-white text-green-600 rounded-2xl shadow-sm">
-                  <ShieldCheck size={24} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Status Backup</p>
-                  <p className="text-sm font-bold text-green-600 truncate uppercase">Sincronizado</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Botão de Ação Central Destaque */}
-            <div className="p-12 pt-10 pb-16 space-y-6">
+              {/* 3. Botão de Ação Primário Destaque */}
               <button 
                 onClick={() => handleOpenWord(selectedCompany)}
                 disabled={isOpening}
-                className="w-full group relative flex items-center justify-center gap-4 py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase text-lg tracking-[0.1em] shadow-[0_20px_40px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-2 transition-all active:scale-95 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-sm tracking-[0.2em] shadow-xl hover:bg-blue-600 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
               >
-                {isOpening ? (
-                  <RefreshCcw className="animate-spin" size={28} />
-                ) : (
-                  <FolderOpen size={28} className="transition-transform group-hover:scale-110" />
-                )}
-                <span>{isOpening ? 'Iniciando...' : 'Abrir Diário no Word'}</span>
-                
-                {/* Efeito Visual de Brilho no Hover */}
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
+                {isOpening ? <RefreshCcw className="animate-spin" size={18} /> : <ExternalLink size={18} />}
+                {isOpening ? 'Aguarde...' : 'Abrir Diário no Word'}
               </button>
 
               {systemError && (
-                <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-center justify-center gap-3 text-red-600 text-xs font-bold animate-shake">
-                   <AlertTriangle size={18} /> Erro: Verifique se o OneDrive está logado na Sinuelo.
+                <div className="p-3 bg-red-50 rounded-xl border border-red-100 flex items-center justify-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest animate-shake">
+                   <AlertTriangle size={14} /> Falha no OneDrive
                 </div>
               )}
             </div>
 
-            {/* 4. Rodapé Técnico Discreto */}
-            <div className="mt-auto p-8 bg-slate-50 border-t border-slate-100 text-center">
-              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
-                <Info size={10} /> Localização do Arquivo de Trabalho
-              </p>
-              <code className="text-[10px] font-mono text-slate-400 opacity-60 break-all select-all">
+            {/* 4. Rodapé Técnico Minimalista */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2 group cursor-help">
+              <Info size={10} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+              <p className="text-[8px] font-mono text-slate-400 opacity-60 truncate max-w-xs group-hover:opacity-100 transition-opacity">
                 C:\Users\Elieser.Fernandes\OneDrive - Sinuelo\CRM-AI PRO\Diario_{selectedCompany.replace(/\s+/g, '_')}.docx
-              </code>
+              </p>
             </div>
 
           </div>
         ) : (
-          <div className="text-center space-y-10 animate-in fade-in duration-700">
+          <div className="text-center space-y-6 pt-12 animate-in fade-in duration-700">
             <div className="relative inline-block">
-               <div className="w-36 h-36 bg-white rounded-[3.5rem] shadow-2xl flex items-center justify-center text-slate-200 border border-slate-100">
-                 <Files size={72} strokeWidth={1.2} />
+               <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-xl flex items-center justify-center text-slate-200 border border-slate-100">
+                 <Files size={48} strokeWidth={1.5} />
                </div>
-               <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl">
-                 <FolderOpen size={28} />
+               <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
+                 <FolderOpen size={20} />
                </div>
             </div>
-            <div className="space-y-4">
-              <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tight leading-none">Gestão de Diários</h3>
-              <p className="text-slate-500 max-w-sm mx-auto leading-relaxed font-medium text-lg">
-                Selecione um cliente para acessar o documento Word exclusivo com backup automático na Sinuelo.
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Gestão Sinuelo</h3>
+              <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium leading-snug">
+                Abra o diário de bordo diretamente no Microsoft Word com sincronização Sinuelo.
               </p>
             </div>
           </div>
