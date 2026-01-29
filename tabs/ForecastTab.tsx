@@ -162,20 +162,20 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                 {filteredData.map((row) => (
                   <tr 
                     key={row.id} 
-                    className={`cursor-pointer transition-all group border-l-4 border-transparent hover:border-blue-500 ${row.color || 'hover:bg-slate-50'}`} 
+                    className={`cursor-pointer transition-all group border-l-4 border-transparent ${row.color ? `${row.color} border-slate-900` : 'hover:bg-slate-50'}`} 
                     onClick={() => onRowSelect(row)}
                   >
                     <td className="p-5 text-center">
                       <div className="p-2 bg-white/50 border border-slate-100 rounded-lg text-slate-400 group-hover:text-blue-600 transition-all shadow-sm"><Eye size={14}/></div>
                     </td>
-                    <td className="p-5 font-bold text-slate-500 whitespace-nowrap">{row['RESP.']}</td>
+                    <td className="p-5 font-bold text-slate-900 whitespace-nowrap">{row['RESP.']}</td>
                     <td className="p-5 font-black text-slate-900 uppercase whitespace-nowrap">{row.CUSTOMER}</td>
-                    <td className="p-5 font-bold text-slate-400 whitespace-nowrap">{row.SUPPLIER}</td>
-                    <td className="p-5 truncate max-w-[350px] italic font-medium text-slate-600">{row.DESCRIPTION}</td>
+                    <td className="p-5 font-bold text-slate-800 whitespace-nowrap">{row.SUPPLIER}</td>
+                    <td className="p-5 truncate max-w-[350px] italic font-medium text-slate-900">{row.DESCRIPTION}</td>
                     <td className="p-5 font-mono font-black text-slate-900 text-sm whitespace-nowrap">
                       {row.AMOUNT.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </td>
-                    <td className="p-5 text-center font-black text-slate-300">{row.UF}</td>
+                    <td className="p-5 text-center font-black text-slate-900">{row.UF}</td>
                     <td className="p-5 text-center">
                       <span className="px-3 py-1 bg-slate-900 text-white rounded-full text-[10px] font-black">{row.Confidence}%</span>
                     </td>
@@ -184,8 +184,8 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                         {row[m as keyof ForecastRow] === 'x' && <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mx-auto text-white shadow-lg"><Check size={12} strokeWidth={4}/></div>}
                       </td>
                     ))}
-                    <td className="p-5 truncate max-w-[200px] text-slate-500 font-medium italic">{row['FOLLOW-UP']}</td>
-                    <td className="p-5 truncate max-w-[200px] text-slate-400 font-bold">{row.CONTATOS}</td>
+                    <td className="p-5 truncate max-w-[200px] text-slate-900 font-medium italic">{row['FOLLOW-UP']}</td>
+                    <td className="p-5 truncate max-w-[200px] text-slate-800 font-bold">{row.CONTATOS}</td>
                   </tr>
                 ))}
               </tbody>
@@ -201,7 +201,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
               <div key={stage} className="flex-shrink-0 w-80 flex flex-col gap-4">
                 <div className="flex items-center justify-between px-4">
                   <div className="flex flex-col">
-                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-[11px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
                       <TrendingUp size={12}/> {CONFIDENCE_MAPPING[stage as keyof typeof CONFIDENCE_MAPPING]?.split(':')[0] || `${stage}%`}
                     </h3>
                     <p className="text-[10px] font-mono font-bold text-blue-600 mt-0.5">
@@ -213,20 +213,20 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ data, setData, onRowSelect, u
                   </span>
                 </div>
                 
-                <div className="flex-1 bg-slate-100/50 rounded-[2rem] border border-slate-200/50 p-3 space-y-3 overflow-y-auto custom-scrollbar min-h-0">
+                <div className="flex-1 bg-slate-200/50 rounded-[2rem] border border-slate-300/50 p-3 space-y-3 overflow-y-auto custom-scrollbar min-h-0">
                   {items.map(item => (
                     <div 
                       key={item.id} 
                       onClick={() => onRowSelect(item)}
-                      className={`${item.color || 'bg-white'} p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition-all cursor-pointer group`}
+                      className={`${item.color || 'bg-white'} p-5 rounded-2xl border ${item.color ? 'border-slate-800/20 shadow-md' : 'border-slate-200 shadow-sm'} hover:shadow-lg hover:border-blue-500 transition-all cursor-pointer group`}
                     >
                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight mb-1 group-hover:text-blue-600">{item.CUSTOMER}</h4>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase truncate mb-3">{item.DESCRIPTION}</p>
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <p className="text-[10px] text-slate-700 font-bold uppercase truncate mb-3">{item.DESCRIPTION}</p>
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-900/10">
                         <span className="text-[11px] font-mono font-black text-slate-900">
                           {item.AMOUNT.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}
                         </span>
-                        <div className="px-2 py-1 bg-white/50 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest border border-slate-100">
+                        <div className="px-2 py-1 bg-white/50 rounded-lg text-[8px] font-black text-slate-900 uppercase tracking-widest border border-slate-200">
                           {item['RESP.']}
                         </div>
                       </div>

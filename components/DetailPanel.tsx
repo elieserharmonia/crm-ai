@@ -35,11 +35,12 @@ interface DetailPanelProps {
 
 const COLORS_PALETTE = [
   { name: 'Nenhuma', class: '', ring: 'ring-slate-200', bg: 'bg-white' },
-  { name: 'Info', class: 'bg-blue-50', ring: 'ring-blue-400', bg: 'bg-blue-400' },
-  { name: 'Sucesso', class: 'bg-green-50', ring: 'ring-green-400', bg: 'bg-green-400' },
-  { name: 'Alerta', class: 'bg-yellow-50', ring: 'ring-yellow-400', bg: 'bg-yellow-400' },
-  { name: 'Urgente', class: 'bg-red-50', ring: 'ring-red-400', bg: 'bg-red-400' },
-  { name: 'Estratégico', class: 'bg-purple-50', ring: 'ring-purple-400', bg: 'bg-purple-400' },
+  { name: 'Info', class: 'bg-blue-200', ring: 'ring-blue-500', bg: 'bg-blue-400' },
+  { name: 'Sucesso', class: 'bg-green-200', ring: 'ring-green-500', bg: 'bg-green-400' },
+  { name: 'Alerta', class: 'bg-yellow-200', ring: 'ring-yellow-500', bg: 'bg-yellow-400' },
+  { name: 'Urgente', class: 'bg-red-200', ring: 'ring-red-500', bg: 'bg-red-400' },
+  { name: 'Estratégico', class: 'bg-purple-200', ring: 'ring-purple-500', bg: 'bg-purple-400' },
+  { name: 'Cinza', class: 'bg-[#D9D9D9]', ring: 'ring-slate-400', bg: 'bg-[#D9D9D9]' },
 ];
 
 const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpdate, user, contacts }) => {
@@ -145,24 +146,24 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ row, onClose, profile, onUpda
       <div className="flex-1 overflow-auto p-8 space-y-10 custom-scrollbar pb-32">
         
         {/* Seletor de Cor (Pintar Linha) */}
-        <div className="p-6 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-4">
+        <div className="p-6 bg-slate-100 border border-slate-200 rounded-[2.5rem] space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Palette size={16} className="text-slate-400" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tag Visual de Status (Cores)</span>
+            <Palette size={16} className="text-slate-900" />
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Pintar Oportunidade (Destaque Visual)</span>
           </div>
           <div className="flex flex-wrap gap-4">
             {COLORS_PALETTE.map((c) => (
               <button
                 key={c.name}
                 onClick={() => handleChange('color', c.class)}
-                className={`w-10 h-10 rounded-full ${c.bg} border-2 border-white shadow-sm transition-all relative ${
-                  localRow.color === c.class ? `ring-4 ${c.ring}` : 'hover:scale-110'
+                className={`w-12 h-12 rounded-full ${c.bg} border-2 border-white shadow-md transition-all relative ${
+                  localRow.color === c.class ? `ring-4 ${c.ring} scale-110` : 'hover:scale-110 opacity-80 hover:opacity-100'
                 }`}
                 title={c.name}
               >
                 {localRow.color === c.class && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white">
-                    <Check size={16} strokeWidth={4} className={c.class === '' ? 'text-slate-900' : ''} />
+                  <div className="absolute inset-0 flex items-center justify-center text-slate-900">
+                    <Check size={20} strokeWidth={4} className={c.class.includes('bg-slate') || c.class === '' ? 'text-slate-900' : 'text-slate-800'} />
                   </div>
                 )}
               </button>
