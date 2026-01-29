@@ -13,16 +13,29 @@ import {
   Pie
 } from 'recharts';
 import { TrendingUp, Users, DollarSign, Target, PieChart as PieIcon, Briefcase, CheckCircle2, AlertCircle } from 'lucide-react';
-import { ForecastRow, Goal, PurchaseOrder } from '../types';
+import { ForecastRow, Goal, PurchaseOrder, SalesPersonProfile } from '../types';
 import { storageService } from '../services/storageService';
 
 interface DashboardTabProps {
   data: ForecastRow[];
+  profile: SalesPersonProfile;
 }
 
-const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
+const DashboardTab: React.FC<DashboardTabProps> = ({ data, profile }) => {
   const goals = storageService.getGoals();
   const pos = storageService.getPOs();
+
+  // Função para pegar iniciais do nome
+  const userInitials = useMemo(() => {
+    if (!profile.name) return '??';
+    return profile.name
+      .split(' ')
+      .filter(n => n.length > 0)
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  }, [profile.name]);
 
   // Stats
   const stats = useMemo(() => {
@@ -62,11 +75,13 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-slate-900 text-white p-8 rounded-[2rem] border-4 border-white shadow-2xl flex flex-col justify-between">
           <div className="flex justify-between items-start">
-             <div className="p-3 bg-blue-600 rounded-xl"><Target size={24}/></div>
-             <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Anual 2026</span>
+             <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-900/50"><Target size={24}/></div>
+             <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Target Financeiro</span>
           </div>
           <div className="mt-6">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Budget Geral da Meta</p>
+             <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">
+               BUDGET 2026_{userInitials}
+             </p>
              <p className="text-2xl font-black font-mono">
                R$ {stats.totalBudgetGoal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
              </p>
@@ -86,19 +101,22 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
                R$ {stats.totalRealizedFromPOs.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
              </p>
              <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: `${Math.min(stats.goalPercent, 100)}%` }} />
+                <div 
+                  className={`h-full transition-all duration-1000 ${stats.goalPercent >= 100 ? 'bg-green-500' : 'bg-blue-600'}`} 
+                  style={{ width: `${Math.min(stats.goalPercent, 100)}%` }} 
+                />
              </div>
           </div>
         </div>
 
         <div className="bg-blue-600 text-white p-8 rounded-[2rem] shadow-xl flex flex-col justify-between overflow-hidden relative">
           <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1">Atingimento</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1">Atingimento da Meta</p>
             <p className="text-5xl font-black tracking-tighter">
               {stats.goalPercent.toFixed(1)}%
             </p>
             <p className="text-[10px] font-bold mt-4 uppercase tracking-widest opacity-80 flex items-center gap-1">
-              <TrendingUp size={12}/> Evolução Constante
+              <TrendingUp size={12}/> Performance Real
             </p>
           </div>
           <DollarSign className="absolute -right-4 -bottom-4 text-white/10" size={120} />
@@ -107,13 +125,13 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ data }) => {
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start">
              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><Briefcase size={24}/></div>
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pipeline Ativo</span>
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pipeline Aberto</span>
           </div>
           <div className="mt-6">
              <p className="text-2xl font-black font-mono text-slate-900">
                R$ {(stats.totalForecastValue / 1000000).toFixed(1)}M
              </p>
-             <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{stats.totalCount} Oportunidades em aberto</p>
+             <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{stats.totalCount} Oportunidades</p>
           </div>
         </div>
       </div>

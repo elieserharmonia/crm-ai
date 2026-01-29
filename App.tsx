@@ -113,7 +113,7 @@ const App: React.FC = () => {
             {activeTab === Tab.Forecast && (
               <ForecastTab data={filteredData} setData={setData} onRowSelect={setSelectedRow} user={user} />
             )}
-            {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} />}
+            {activeTab === Tab.Dashboard && <DashboardTab data={filteredData} profile={profile} />}
             {activeTab === Tab.Goals && <GoalsTab data={filteredData} goals={goals} setGoals={setGoals} onGoalClick={() => setActiveTab(Tab.Forecast)} />}
             {activeTab === Tab.Orders && <OrdersTab pos={pos} setPos={setPos} />}
             {activeTab === Tab.Companies && (
